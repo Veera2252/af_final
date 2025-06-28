@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +11,12 @@ import {
   Award,
   FileText,
   TrendingUp,
-  Plus
+  Plus,
+  ArrowUpRight,
+  Clock,
+  CheckCircle,
+  Target,
+  BarChart3
 } from 'lucide-react';
 
 export const StaffDashboard: React.FC = () => {
@@ -20,7 +24,11 @@ export const StaffDashboard: React.FC = () => {
     myCourses: 0,
     totalStudents: 0,
     totalAssignments: 0,
-    totalQuizzes: 0
+    totalQuizzes: 0,
+    publishedCourses: 0,
+    draftCourses: 0,
+    avgCompletionRate: 0,
+    recentEnrollments: 0
   });
   const [recentCourses, setRecentCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,19 +47,40 @@ export const StaffDashboard: React.FC = () => {
 
     try {
       // Fetch courses created by this staff member
-      const { count: courseCount } = await supabase
+      const { data: courses, count: courseCount } = await supabase
         .from('courses')
-        .select('*', { count: 'exact', head: true })
+        .select('*', { count: 'exact' })
         .eq('created_by', profile.id);
+
+      const publishedCourses = courses?.filter(c => c.is_published).length || 0;
+      const draftCourses = (courseCount || 0) - publishedCourses;
 
       // Fetch total students enrolled in staff's courses
       const { data: enrollments } = await supabase
         .from('enrollments')
         .select(`
           course_id,
+          progress,
           courses!inner(created_by)
         `)
         .eq('courses.created_by', profile.id);
+
+      const uniqueStudents = new Set(enrollments?.map(e => e.course_id)).size;
+      const avgProgress = enrollments?.length ? 
+        enrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / enrollments.length : 0;
+
+      // Recent enrollments (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { count: recentEnrollmentCount } = await supabase
+        .from('enrollments')
+        .select(`
+          *,
+          courses!inner(created_by)
+        `, { count: 'exact', head: true })
+        .eq('courses.created_by', profile.id)
+        .gte('enrolled_at', thirtyDaysAgo.toISOString());
 
       // Fetch assignments for staff's courses
       const { count: assignmentCount } = await supabase
@@ -73,9 +102,13 @@ export const StaffDashboard: React.FC = () => {
 
       setStats({
         myCourses: courseCount || 0,
-        totalStudents: enrollments?.length || 0,
+        publishedCourses,
+        draftCourses,
+        totalStudents: uniqueStudents,
         totalAssignments: assignmentCount || 0,
-        totalQuizzes: quizCount || 0
+        totalQuizzes: quizCount || 0,
+        avgCompletionRate: Math.round(avgProgress),
+        recentEnrollments: recentEnrollmentCount || 0
       });
     } catch (error: any) {
       toast({
@@ -107,142 +140,245 @@ export const StaffDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-8">Loading dashboard...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Staff Dashboard</h1>
-        <p className="text-gray-600">Manage your courses and students</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
+      <div className="container mx-auto py-8 space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Staff Dashboard
+          </h1>
+          <p className="text-gray-600 text-lg">Manage your courses and track student progress</p>
+        </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Courses</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.myCourses}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalStudents}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assignments</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAssignments}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Quizzes</CardTitle>
-            <Award className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalQuizzes}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Link to="/admin/courses/new">
-                <Button className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Course
-                </Button>
-              </Link>
-              
-              <Link to="/admin/courses">
-                <Button variant="outline" className="w-full">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Manage My Courses
-                </Button>
-              </Link>
-              
-              <Link to="/staff/students">
-                <Button variant="outline" className="w-full">
-                  <Users className="h-4 w-4 mr-2" />
-                  View My Students
-                </Button>
-              </Link>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm font-medium">My Courses</p>
+                  <p className="text-3xl font-bold">{stats.myCourses}</p>
+                  <p className="text-purple-100 text-xs mt-1">{stats.publishedCourses} published</p>
+                </div>
+                <BookOpen className="h-12 w-12 text-purple-200" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Award className="h-5 w-5 mr-2" />
-                Assessment Tools
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-600 mb-4">Create and manage assessments for your courses.</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Link to="/staff/quizzes">
-                  <Button variant="outline" size="sm" className="w-full">
-                    Manage Quizzes
-                  </Button>
-                </Link>
-                <Link to="/staff/assignments">
-                  <Button variant="outline" size="sm" className="w-full">
-                    Manage Assignments
-                  </Button>
-                </Link>
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm font-medium">Total Students</p>
+                  <p className="text-3xl font-bold">{stats.totalStudents}</p>
+                  <p className="text-blue-100 text-xs mt-1">{stats.recentEnrollments} new this month</p>
+                </div>
+                <Users className="h-12 w-12 text-blue-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-100 text-sm font-medium">Assignments</p>
+                  <p className="text-3xl font-bold">{stats.totalAssignments}</p>
+                  <p className="text-emerald-100 text-xs mt-1">Across all courses</p>
+                </div>
+                <FileText className="h-12 w-12 text-emerald-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-amber-100 text-sm font-medium">Quizzes</p>
+                  <p className="text-3xl font-bold">{stats.totalQuizzes}</p>
+                  <p className="text-amber-100 text-xs mt-1">Assessment tools</p>
+                </div>
+                <Award className="h-12 w-12 text-amber-200" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Recent Courses */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Courses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentCourses.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No courses created yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {recentCourses.map((course: any) => (
-                  <div key={course.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <h4 className="font-medium">{course.title}</h4>
-                      <p className="text-sm text-gray-600">
-                        {course.is_published ? 'Published' : 'Draft'} • ${course.price}
-                      </p>
-                    </div>
-                    <Link to={`/admin/courses/${course.id}`}>
-                      <Button size="sm" variant="outline">Edit</Button>
-                    </Link>
-                  </div>
-                ))}
+        {/* Secondary Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Avg. Completion Rate</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.avgCompletionRate}%</p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-full">
+                  <Target className="h-6 w-6 text-green-600" />
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Draft Courses</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.draftCourses}</p>
+                </div>
+                <div className="bg-amber-100 p-3 rounded-full">
+                  <Clock className="h-6 w-6 text-amber-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Recent Enrollments</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.recentEnrollments}</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <TrendingUp className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Quick Actions */}
+          <div className="space-y-6">
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg">
+                    <Plus className="h-6 w-6 text-white" />
+                  </div>
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Link to="/admin/courses/new">
+                  <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Course
+                  </Button>
+                </Link>
+                
+                <Link to="/admin/courses">
+                  <Button variant="outline" className="w-full border-purple-200 text-purple-700 hover:bg-purple-50">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Manage My Courses
+                  </Button>
+                </Link>
+                
+                <Link to="/staff/students">
+                  <Button variant="outline" className="w-full border-blue-200 text-blue-700 hover:bg-blue-50">
+                    <Users className="h-4 w-4 mr-2" />
+                    View My Students
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 rounded-lg">
+                    <Award className="h-6 w-6 text-white" />
+                  </div>
+                  Assessment Tools
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-600 mb-4">Create and manage assessments for your courses.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Link to="/staff/quizzes">
+                    <Button variant="outline" size="sm" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                      Manage Quizzes
+                    </Button>
+                  </Link>
+                  <Link to="/staff/assignments">
+                    <Button variant="outline" size="sm" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                      Manage Assignments
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Courses */}
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg">
+                    <BookOpen className="h-6 w-6 text-white" />
+                  </div>
+                  Recent Courses
+                </div>
+                <Link to="/admin/courses">
+                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                    View All
+                    <ArrowUpRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentCourses.length === 0 ? (
+                <div className="text-center py-8">
+                  <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">No courses created yet.</p>
+                  <Link to="/admin/courses/new">
+                    <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
+                      Create Your First Course
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentCourses.map((course: any) => (
+                    <div key={course.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">{course.title}</h4>
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            course.is_published 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {course.is_published ? 'Published' : 'Draft'}
+                          </span>
+                          <span className="text-sm text-gray-600">${course.price}</span>
+                        </div>
+                      </div>
+                      <Link to={`/admin/courses/${course.id}`}>
+                        <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                          Edit
+                        </Button>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
