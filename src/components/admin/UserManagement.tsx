@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { Trash2, UserPlus, Users, Shield, GraduationCap, Crown, Mail, Key } from 'lucide-react';
+import { Trash2, UserPlus, Users, Shield, GraduationCap, Crown, Mail, Key, Copy, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 
 type Profile = Tables<'profiles'>;
 
@@ -19,6 +20,8 @@ export const UserManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
   const [adminCount, setAdminCount] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [generatedCredentials, setGeneratedCredentials] = useState<{email: string, password: string} | null>(null);
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -65,22 +68,12 @@ export const UserManagement: React.FC = () => {
     return password;
   };
 
-  const sendCredentialsEmail = async (email: string, password: string, fullName: string, role: string) => {
-    try {
-      // In a real implementation, you would call your backend API to send email
-      // For now, we'll show the credentials in a toast
-      toast({
-        title: "User Created Successfully!",
-        description: `Credentials: Email: ${email}, Password: ${password}. Please share these securely with the user.`,
-        duration: 10000,
-      });
-      
-      // You could also copy to clipboard
-      navigator.clipboard.writeText(`Email: ${email}\nPassword: ${password}`);
-      
-    } catch (error) {
-      console.error('Error sending email:', error);
-    }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Credentials copied to clipboard",
+    });
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -102,7 +95,7 @@ export const UserManagement: React.FC = () => {
     setLoading(true);
 
     try {
-      // Create user with Supabase Auth
+      // First, create the user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: password,
@@ -121,29 +114,49 @@ export const UserManagement: React.FC = () => {
         throw new Error('Failed to create user');
       }
 
-      // Wait a moment for the trigger to create the profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for the trigger to create the profile
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Update the profile with the correct role
-      const { error: updateError } = await supabase
+      // Force update the profile with correct data
+      const { error: profileError } = await supabase
         .from('profiles')
-        .update({ 
-          role: newUser.role,
+        .upsert({
+          id: authData.user.id,
+          email: newUser.email,
           full_name: newUser.full_name,
-          email: newUser.email
-        })
-        .eq('id', authData.user.id);
+          role: newUser.role,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        });
 
-      if (updateError) {
-        console.warn('Failed to update profile:', updateError);
+      if (profileError) {
+        console.warn('Profile update error:', profileError);
+        // Try alternative approach
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            role: newUser.role,
+            full_name: newUser.full_name,
+            email: newUser.email
+          })
+          .eq('id', authData.user.id);
+
+        if (updateError) {
+          console.warn('Profile update alternative failed:', updateError);
+        }
       }
 
-      // Send credentials via email (simulated)
-      await sendCredentialsEmail(newUser.email, password, newUser.full_name, newUser.role);
+      // Store credentials for display
+      setGeneratedCredentials({
+        email: newUser.email,
+        password: password
+      });
 
       toast({
         title: "Success",
-        description: `${newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1)} user created successfully! Credentials have been generated.`,
+        description: `${newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1)} user created successfully!`,
       });
 
       setNewUser({ email: '', password: '', full_name: '', role: 'student' });
@@ -152,7 +165,7 @@ export const UserManagement: React.FC = () => {
       // Refresh users list
       setTimeout(() => {
         fetchUsers();
-      }, 1500);
+      }, 1000);
       
     } catch (error: any) {
       toast({
@@ -308,13 +321,28 @@ export const UserManagement: React.FC = () => {
               </div>
               <div>
                 <Label htmlFor="password">Password (Optional)</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  placeholder="Leave empty to auto-generate"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    placeholder="Leave empty to auto-generate"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
                   If left empty, a secure password will be generated automatically
                 </p>
@@ -322,10 +350,10 @@ export const UserManagement: React.FC = () => {
               
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-start gap-3">
-                  <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <Key className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium text-blue-800">Email Notification</p>
-                    <p className="text-blue-700">Login credentials will be displayed after user creation. Please share them securely with the user.</p>
+                    <p className="font-medium text-blue-800">Credential Management</p>
+                    <p className="text-blue-700">Login credentials will be displayed after user creation. Admin users can access all dashboards using these credentials.</p>
                   </div>
                 </div>
               </div>
@@ -342,6 +370,75 @@ export const UserManagement: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Generated Credentials Display */}
+      {generatedCredentials && (
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-800">
+              <Key className="h-5 w-5" />
+              User Created Successfully!
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-white p-4 rounded-lg border border-green-200">
+              <h3 className="font-semibold text-green-800 mb-3">Login Credentials</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium text-green-700">Email:</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input value={generatedCredentials.email} readOnly className="bg-gray-50" />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(generatedCredentials.email)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-green-700">Password:</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input value={generatedCredentials.password} readOnly className="bg-gray-50 font-mono" />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(generatedCredentials.password)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <strong>Important:</strong> Please share these credentials securely with the user. 
+                  Admin users can access all dashboards (admin, staff, and student) using these credentials.
+                  The user can change their password after first login.
+                </p>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => copyToClipboard(`Email: ${generatedCredentials.email}\nPassword: ${generatedCredentials.password}`)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Both
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setGeneratedCredentials(null)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

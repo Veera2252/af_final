@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -17,6 +16,9 @@ interface AuthContextType {
   isAdmin: boolean;
   isStaff: boolean;
   isStudent: boolean;
+  canAccessAdminDashboard: boolean;
+  canAccessStaffDashboard: boolean;
+  canAccessStudentDashboard: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -133,6 +135,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isStaff = profile?.role === 'staff';
   const isStudent = profile?.role === 'student';
 
+  // Admin users can access all dashboards
+  const canAccessAdminDashboard = isAdmin;
+  const canAccessStaffDashboard = isAdmin || isStaff;
+  const canAccessStudentDashboard = isAdmin || isStaff || isStudent;
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -144,7 +151,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signOut,
       isAdmin,
       isStaff,
-      isStudent
+      isStudent,
+      canAccessAdminDashboard,
+      canAccessStaffDashboard,
+      canAccessStudentDashboard
     }}>
       {children}
     </AuthContext.Provider>

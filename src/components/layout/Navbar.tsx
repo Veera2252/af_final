@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export const Navbar: React.FC = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, canAccessAdminDashboard, canAccessStaffDashboard, canAccessStudentDashboard } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -92,60 +92,53 @@ export const Navbar: React.FC = () => {
   }
 
   const navigationItems = [
+    // Dashboard links based on user permissions
     {
-      label: 'Dashboard',
-      path: profile.role === 'admin' ? '/admin/dashboard' : 
-            profile.role === 'staff' ? '/staff/dashboard' : '/student/dashboard',
-      icon: Home,
-      roles: ['admin', 'staff', 'student']
+      label: 'Admin Dashboard',
+      path: '/admin/dashboard',
+      icon: Crown,
+      show: canAccessAdminDashboard
     },
+    {
+      label: 'Staff Dashboard',
+      path: '/staff/dashboard',
+      icon: Shield,
+      show: canAccessStaffDashboard
+    },
+    {
+      label: 'Student Dashboard',
+      path: '/student/dashboard',
+      icon: GraduationCap,
+      show: canAccessStudentDashboard
+    },
+    // Regular navigation items
     {
       label: 'Browse Courses',
       path: '/courses',
       icon: BookOpen,
-      roles: ['student']
-    },
-    {
-      label: 'My Learning',
-      path: '/student/dashboard',
-      icon: GraduationCap,
-      roles: ['student']
-    },
-    {
-      label: 'My Payments',
-      path: '/student/payments',
-      icon: CreditCard,
-      roles: ['student']
+      show: true
     },
     {
       label: 'Manage Courses',
       path: '/admin/courses',
       icon: BookOpen,
-      roles: ['admin', 'staff']
+      show: canAccessAdminDashboard || canAccessStaffDashboard
     },
     {
       label: 'Users',
       path: '/admin/users',
       icon: Users,
-      roles: ['admin']
-    },
-    {
-      label: 'Analytics',
-      path: '/admin/dashboard',
-      icon: BarChart3,
-      roles: ['admin']
+      show: canAccessAdminDashboard
     },
     {
       label: 'Payments',
       path: '/admin/payments',
       icon: CreditCard,
-      roles: ['admin']
+      show: canAccessAdminDashboard
     }
   ];
 
-  const visibleNavItems = navigationItems.filter(item => 
-    item.roles.includes(profile.role)
-  );
+  const visibleNavItems = navigationItems.filter(item => item.show);
 
   return (
     <nav className="bg-white/95 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
@@ -236,6 +229,38 @@ export const Navbar: React.FC = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                
+                {/* Dashboard Access for Admins */}
+                {canAccessAdminDashboard && (
+                  <>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/admin/dashboard')}>
+                      <Crown className="mr-2 h-4 w-4" />
+                      <span>Admin Dashboard</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
+                {canAccessStaffDashboard && (
+                  <>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/staff/dashboard')}>
+                      <Shield className="mr-2 h-4 w-4" />
+                      <span>Staff Dashboard</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
+                {canAccessStudentDashboard && (
+                  <>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/student/dashboard')}>
+                      <GraduationCap className="mr-2 h-4 w-4" />
+                      <span>Student Dashboard</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
                 <DropdownMenuItem className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
@@ -244,7 +269,7 @@ export const Navbar: React.FC = () => {
                   <Users className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                {profile.role === 'student' && (
+                {(profile.role === 'student' || canAccessStudentDashboard) && (
                   <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/student/payments')}>
                     <CreditCard className="mr-2 h-4 w-4" />
                     <span>Payment History</span>
