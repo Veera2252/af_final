@@ -81,7 +81,7 @@ export const Navbar: React.FC = () => {
                   <BookOpen className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  CourseHive LMS
+                  AlphaFly LMS
                 </span>
               </Link>
             </div>
@@ -109,6 +109,12 @@ export const Navbar: React.FC = () => {
       label: 'My Learning',
       path: '/student/dashboard',
       icon: GraduationCap,
+      roles: ['student']
+    },
+    {
+      label: 'My Payments',
+      path: '/student/payments',
+      icon: CreditCard,
       roles: ['student']
     },
     {
@@ -153,9 +159,9 @@ export const Navbar: React.FC = () => {
               </div>
               <div className="hidden sm:block">
                 <span className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  CourseHive
+                  AlphaFly
                 </span>
-                <div className="text-xs text-gray-500 font-medium">Learning Management System</div>
+                <div className="text-xs text-gray-500 font-medium">Computer Education</div>
               </div>
             </Link>
           </div>
@@ -238,6 +244,12 @@ export const Navbar: React.FC = () => {
                   <Users className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
+                {profile.role === 'student' && (
+                  <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/student/payments')}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Payment History</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600 focus:text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />

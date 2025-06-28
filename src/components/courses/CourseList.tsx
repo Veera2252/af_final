@@ -18,7 +18,8 @@ import {
   Globe,
   Lock,
   Calendar,
-  Star
+  Star,
+  ShoppingCart
 } from 'lucide-react';
 
 type Course = Tables<'courses'> & {
@@ -222,7 +223,7 @@ export const CourseList: React.FC = () => {
                       </div>
                       <div className="absolute top-3 right-3">
                         <Badge variant={course.price > 0 ? "destructive" : "secondary"} className="shadow-lg">
-                          {course.price > 0 ? `$${course.price}` : 'Free'}
+                          {course.price > 0 ? `₹${course.price}` : 'Free'}
                         </Badge>
                       </div>
                     </div>
@@ -291,8 +292,8 @@ export const CourseList: React.FC = () => {
                           >
                             {course.price > 0 ? (
                               <>
-                                <DollarSign className="h-4 w-4 mr-2" />
-                                Buy Now
+                                <ShoppingCart className="h-4 w-4 mr-2" />
+                                Buy ₹{course.price}
                               </>
                             ) : (
                               'Enroll Free'
