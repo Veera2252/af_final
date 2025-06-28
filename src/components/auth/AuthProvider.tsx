@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { Tables } from '@/integrations/supabase/types';
+import { useNavigate } from 'react-router-dom';
 
 type Profile = Tables<'profiles'>;
 
@@ -86,10 +87,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Profile fetched:', data);
       setProfile(data);
+      
+      // Navigate to appropriate dashboard based on role
+      if (data && data.role) {
+        navigateToRoleDashboard(data.role);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const navigateToRoleDashboard = (role: string) => {
+    // Only navigate if we're currently on the home page or login page
+    const currentPath = window.location.pathname;
+    if (currentPath === '/' || currentPath === '/login') {
+      switch (role) {
+        case 'admin':
+          window.location.href = '/admin/dashboard';
+          break;
+        case 'staff':
+          window.location.href = '/staff/dashboard';
+          break;
+        case 'student':
+          window.location.href = '/student/dashboard';
+          break;
+        default:
+          console.log('Unknown role:', role);
+      }
     }
   };
 
@@ -115,7 +141,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          full_name: fullName
+          full_name: fullName,
+          role: 'student' // Default role for public signup
         }
       }
     });
@@ -129,6 +156,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    
+    // Navigate to home page after sign out
+    window.location.href = '/';
   };
 
   const isAdmin = profile?.role === 'admin';
