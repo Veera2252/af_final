@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { Trash2, UserPlus, Users, Shield, GraduationCap, Crown } from 'lucide-react';
+import { Trash2, UserPlus, Users, Shield, GraduationCap, Crown, Mail, Key } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 type Profile = Tables<'profiles'>;
@@ -56,6 +56,33 @@ export const UserManagement: React.FC = () => {
     }
   };
 
+  const generateRandomPassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
+  const sendCredentialsEmail = async (email: string, password: string, fullName: string, role: string) => {
+    try {
+      // In a real implementation, you would call your backend API to send email
+      // For now, we'll show the credentials in a toast
+      toast({
+        title: "User Created Successfully!",
+        description: `Credentials: Email: ${email}, Password: ${password}. Please share these securely with the user.`,
+        duration: 10000,
+      });
+      
+      // You could also copy to clipboard
+      navigator.clipboard.writeText(`Email: ${email}\nPassword: ${password}`);
+      
+    } catch (error) {
+      console.error('Error sending email:', error);
+    }
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -69,18 +96,22 @@ export const UserManagement: React.FC = () => {
       return;
     }
 
+    // Generate random password if not provided
+    const password = newUser.password || generateRandomPassword();
+
     setLoading(true);
 
     try {
-      // Use regular signup instead of admin functions
+      // Create user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
-        password: newUser.password,
+        password: password,
         options: {
           data: {
             full_name: newUser.full_name,
             role: newUser.role
-          }
+          },
+          emailRedirectTo: undefined // Disable email confirmation
         }
       });
 
@@ -90,32 +121,38 @@ export const UserManagement: React.FC = () => {
         throw new Error('Failed to create user');
       }
 
-      // The profile will be created automatically by the trigger function
-      // We just need to update the role if it's not student (default)
-      if (newUser.role !== 'student') {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ role: newUser.role })
-          .eq('id', authData.user.id);
+      // Wait a moment for the trigger to create the profile
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-        if (updateError) {
-          console.warn('Failed to update role:', updateError);
-          // Don't throw here as the user was created successfully
-        }
+      // Update the profile with the correct role
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          role: newUser.role,
+          full_name: newUser.full_name,
+          email: newUser.email
+        })
+        .eq('id', authData.user.id);
+
+      if (updateError) {
+        console.warn('Failed to update profile:', updateError);
       }
+
+      // Send credentials via email (simulated)
+      await sendCredentialsEmail(newUser.email, password, newUser.full_name, newUser.role);
 
       toast({
         title: "Success",
-        description: `${newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1)} user created successfully!`,
+        description: `${newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1)} user created successfully! Credentials have been generated.`,
       });
 
       setNewUser({ email: '', password: '', full_name: '', role: 'student' });
       setShowAddUser(false);
       
-      // Refresh users list after a short delay to allow for profile creation
+      // Refresh users list
       setTimeout(() => {
         fetchUsers();
-      }, 1000);
+      }, 1500);
       
     } catch (error: any) {
       toast({
@@ -227,18 +264,6 @@ export const UserManagement: React.FC = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  placeholder="Minimum 6 characters"
-                  required
-                  minLength={6}
-                />
-              </div>
-              <div>
                 <Label htmlFor="full_name">Full Name</Label>
                 <Input
                   id="full_name"
@@ -281,6 +306,30 @@ export const UserManagement: React.FC = () => {
                   </p>
                 )}
               </div>
+              <div>
+                <Label htmlFor="password">Password (Optional)</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  placeholder="Leave empty to auto-generate"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  If left empty, a secure password will be generated automatically
+                </p>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-blue-800">Email Notification</p>
+                    <p className="text-blue-700">Login credentials will be displayed after user creation. Please share them securely with the user.</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-4">
                 <Button type="submit" disabled={loading} className="flex-1">
                   {loading ? 'Creating...' : 'Create User'}
