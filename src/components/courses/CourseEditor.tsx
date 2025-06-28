@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,12 +10,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { ContentEditor } from './ContentEditor';
-import { Plus, Save, Trash2, Edit, FileText, Video, Image, BookOpen } from 'lucide-react';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { ContentManager } from './ContentManager';
+import { AssignmentManager } from '@/components/assessments/AssignmentManager';
+import { QuizManager } from '@/components/assessments/QuizManager';
+import { 
+  Save, 
+  Eye, 
+  Upload, 
+  BookOpen, 
+  FileText, 
+  Award, 
+  Settings,
+  ArrowLeft,
+  Globe,
+  Lock
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 type Course = Tables<'courses'>;
-type CourseSection = Tables<'course_sections'>;
-type CourseContent = Tables<'course_content'>;
 
 export const CourseEditor: React.FC = () => {
   const { courseId } = useParams();
@@ -25,18 +38,17 @@ export const CourseEditor: React.FC = () => {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [course, setCourse] = useState<Course | null>(null);
-  const [sections, setSections] = useState<CourseSection[]>([]);
-  const [contents, setContents] = useState<Record<string, CourseContent[]>>({});
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
-    price: 0
+    price: 0,
+    thumbnail_url: '',
+    is_published: false
   });
 
   useEffect(() => {
     if (courseId && courseId !== 'new') {
       fetchCourse();
-      fetchSections();
     }
   }, [courseId]);
 
@@ -55,49 +67,10 @@ export const CourseEditor: React.FC = () => {
       setCourseData({
         title: data.title,
         description: data.description || '',
-        price: data.price
+        price: data.price,
+        thumbnail_url: data.thumbnail_url || '',
+        is_published: data.is_published || false
       });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const fetchSections = async () => {
-    if (!courseId || courseId === 'new') return;
-
-    try {
-      const { data, error } = await supabase
-        .from('course_sections')
-        .select('*')
-        .eq('course_id', courseId)
-        .order('order_index');
-
-      if (error) throw error;
-      setSections(data || []);
-
-      // Fetch content for each section
-      const contentPromises = data?.map(async (section) => {
-        const { data: contentData, error: contentError } = await supabase
-          .from('course_content')
-          .select('*')
-          .eq('section_id', section.id)
-          .order('order_index');
-
-        if (contentError) throw contentError;
-        return { sectionId: section.id, content: contentData || [] };
-      }) || [];
-
-      const contentResults = await Promise.all(contentPromises);
-      const contentMap: Record<string, CourseContent[]> = {};
-      contentResults.forEach(({ sectionId, content }) => {
-        contentMap[sectionId] = content;
-      });
-      setContents(contentMap);
-
     } catch (error: any) {
       toast({
         title: "Error",
@@ -119,7 +92,9 @@ export const CourseEditor: React.FC = () => {
             title: courseData.title,
             description: courseData.description,
             price: courseData.price,
-            created_by: profile.id
+            thumbnail_url: courseData.thumbnail_url,
+            created_by: profile.id,
+            is_published: courseData.is_published
           }])
           .select()
           .single();
@@ -138,7 +113,9 @@ export const CourseEditor: React.FC = () => {
           .update({
             title: courseData.title,
             description: courseData.description,
-            price: courseData.price
+            price: courseData.price,
+            thumbnail_url: courseData.thumbnail_url,
+            is_published: courseData.is_published
           })
           .eq('id', courseId);
 
@@ -148,6 +125,8 @@ export const CourseEditor: React.FC = () => {
           title: "Success",
           description: "Course updated successfully!",
         });
+        
+        fetchCourse();
       }
     } catch (error: any) {
       toast({
@@ -160,312 +139,259 @@ export const CourseEditor: React.FC = () => {
     }
   };
 
-  const handleAddSection = async () => {
-    if (!courseId || courseId === 'new') {
+  const handleThumbnailUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // In a real implementation, you would upload to a storage service
+      // For now, we'll use a placeholder URL
+      const url = URL.createObjectURL(file);
+      setCourseData({ ...courseData, thumbnail_url: url });
       toast({
-        title: "Error",
-        description: "Please save the course first before adding sections.",
-        variant: "destructive",
+        title: "Info",
+        description: "Thumbnail uploaded (demo mode - implement file storage)",
       });
-      return;
-    }
-
-    const newSectionTitle = prompt('Enter section title:');
-    if (!newSectionTitle) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('course_sections')
-        .insert([{
-          course_id: courseId,
-          title: newSectionTitle,
-          order_index: sections.length
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      setSections([...sections, data]);
-      setContents({ ...contents, [data.id]: [] });
-      toast({
-        title: "Success",
-        description: "Section added successfully!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteSection = async (sectionId: string) => {
-    if (!confirm('Are you sure you want to delete this section and all its content?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('course_sections')
-        .delete()
-        .eq('id', sectionId);
-
-      if (error) throw error;
-      
-      setSections(sections.filter(s => s.id !== sectionId));
-      const newContents = { ...contents };
-      delete newContents[sectionId];
-      setContents(newContents);
-      
-      toast({
-        title: "Success",
-        description: "Section deleted successfully!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteContent = async (contentId: string, sectionId: string) => {
-    if (!confirm('Are you sure you want to delete this content?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('course_content')
-        .delete()
-        .eq('id', contentId);
-
-      if (error) throw error;
-      
-      const updatedContent = contents[sectionId].filter(c => c.id !== contentId);
-      setContents({ ...contents, [sectionId]: updatedContent });
-      
-      toast({
-        title: "Success",
-        description: "Content deleted successfully!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handlePublishCourse = async () => {
-    if (!courseId || courseId === 'new') return;
-
-    try {
-      const { error } = await supabase
-        .from('courses')
-        .update({ is_published: true })
-        .eq('id', courseId);
-
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Course published successfully!",
-      });
-      
-      fetchCourse();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getContentIcon = (contentType: string) => {
-    switch (contentType) {
-      case 'video':
-        return <Video className="h-4 w-4" />;
-      case 'image':  
-        return <Image className="h-4 w-4" />;
-      case 'text':
-        return <FileText className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
     }
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">
-          {courseId === 'new' ? 'Create New Course' : 'Edit Course'}
-        </h1>
-        <div className="flex gap-2">
-          <Button onClick={handleSaveCourse} disabled={loading}>
-            <Save className="h-4 w-4 mr-2" />
-            Save Course
-          </Button>
-          {course && !course.is_published && (
-            <Button onClick={handlePublishCourse} variant="outline">
-              Publish Course
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="container mx-auto py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/admin/courses')}
+              className="hover:bg-white/50"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Courses
             </Button>
-          )}
-          {courseId !== 'new' && (
-            <>
-              <Button 
-                onClick={() => navigate(`/admin/courses/${courseId}/quizzes`)} 
-                variant="outline"
-              >
-                <BookOpen className="h-4 w-4 mr-2" />
-                Manage Quizzes
-              </Button>
-              <Button 
-                onClick={() => navigate(`/admin/courses/${courseId}/assignments`)} 
-                variant="outline"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Manage Assignments
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <Tabs defaultValue="details" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="details">Course Details</TabsTrigger>
-          <TabsTrigger value="content">Content & Sections</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="title">Course Title</Label>
-                <Input
-                  id="title"
-                  value={courseData.title}
-                  onChange={(e) => setCourseData({ ...courseData, title: e.target.value })}
-                  placeholder="Enter course title"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={courseData.description}
-                  onChange={(e) => setCourseData({ ...courseData, description: e.target.value })}
-                  placeholder="Enter course description"
-                  rows={4}
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price ($)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={courseData.price}
-                  onChange={(e) => setCourseData({ ...courseData, price: parseFloat(e.target.value) || 0 })}
-                  placeholder="0.00"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="content">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Course Sections & Content</CardTitle>
-                <Button onClick={handleAddSection}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Section
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {sections.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  No sections yet. Add a section to get started.
-                </p>
-              ) : (
-                <div className="space-y-6">
-                  {sections.map((section, index) => (
-                    <Card key={section.id} className="border-l-4 border-l-blue-500">
-                      <CardHeader>
-                        <div className="flex justify-between items-center">
-                          <h3 className="font-medium text-lg">
-                            {index + 1}. {section.title}
-                          </h3>
-                          <div className="flex gap-2">
-                            <ContentEditor
-                              sectionId={section.id}
-                              onContentAdded={() => fetchSections()}
-                            />
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteSection(section.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {contents[section.id]?.length === 0 ? (
-                          <p className="text-gray-500 text-sm">No content added yet</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {contents[section.id]?.map((content, contentIndex) => (
-                              <div
-                                key={content.id}
-                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                              >
-                                <div className="flex items-center space-x-3">
-                                  {getContentIcon(content.content_type)}
-                                  <div>
-                                    <p className="font-medium text-sm">{content.title}</p>
-                                    <p className="text-xs text-gray-500 capitalize">
-                                      {content.content_type}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <ContentEditor
-                                    sectionId={section.id}
-                                    onContentAdded={() => fetchSections()}
-                                    existingContent={content}
-                                    isEdit={true}
-                                  />
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => handleDeleteContent(content.id, section.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {courseId === 'new' ? 'Create New Course' : 'Edit Course'}
+              </h1>
+              {course && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant={course.is_published ? "default" : "secondary"}>
+                    {course.is_published ? (
+                      <>
+                        <Globe className="h-3 w-3 mr-1" />
+                        Published
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-3 w-3 mr-1" />
+                        Draft
+                      </>
+                    )}
+                  </Badge>
+                  <span className="text-sm text-gray-500">
+                    Created {new Date(course.created_at!).toLocaleDateString()}
+                  </span>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleSaveCourse} disabled={loading} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? 'Saving...' : 'Save Course'}
+            </Button>
+            {courseId !== 'new' && (
+              <Button 
+                variant="outline" 
+                onClick={() => navigate(`/course/${courseId}/preview`)}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <Tabs defaultValue="details" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 bg-white/50 backdrop-blur-sm">
+            <TabsTrigger value="details" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="content" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Content
+            </TabsTrigger>
+            <TabsTrigger value="assignments" className="flex items-center gap-2" disabled={courseId === 'new'}>
+              <FileText className="h-4 w-4" />
+              Assignments
+            </TabsTrigger>
+            <TabsTrigger value="quizzes" className="flex items-center gap-2" disabled={courseId === 'new'}>
+              <Award className="h-4 w-4" />
+              Quizzes
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Course Details */}
+          <TabsContent value="details">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Course Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="title" className="text-sm font-medium">Course Title *</Label>
+                      <Input
+                        id="title"
+                        value={courseData.title}
+                        onChange={(e) => setCourseData({ ...courseData, title: e.target.value })}
+                        placeholder="Enter an engaging course title"
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="price" className="text-sm font-medium">Price ($)</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        value={courseData.price}
+                        onChange={(e) => setCourseData({ ...courseData, price: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="thumbnail" className="text-sm font-medium">Course Thumbnail</Label>
+                      <div className="mt-1 space-y-2">
+                        <Input
+                          id="thumbnail"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleThumbnailUpload}
+                          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        {courseData.thumbnail_url && (
+                          <img 
+                            src={courseData.thumbnail_url} 
+                            alt="Course thumbnail" 
+                            className="w-32 h-20 object-cover rounded-lg border"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description" className="text-sm font-medium">Course Description</Label>
+                    <RichTextEditor
+                      content={courseData.description}
+                      onChange={(content) => setCourseData({ ...courseData, description: content })}
+                      placeholder="Describe what students will learn in this course..."
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Course Content */}
+          <TabsContent value="content">
+            {courseId === 'new' ? (
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardContent className="p-12 text-center">
+                  <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Save Course First</h3>
+                  <p className="text-gray-600 mb-6">Please save the course details before adding content.</p>
+                  <Button onClick={handleSaveCourse} disabled={loading}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Course
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <ContentManager courseId={courseId!} />
+            )}
+          </TabsContent>
+
+          {/* Assignments */}
+          <TabsContent value="assignments">
+            {courseId === 'new' ? (
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardContent className="p-12 text-center">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Save Course First</h3>
+                  <p className="text-gray-600">Please save the course before adding assignments.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <AssignmentManager />
+            )}
+          </TabsContent>
+
+          {/* Quizzes */}
+          <TabsContent value="quizzes">
+            {courseId === 'new' ? (
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardContent className="p-12 text-center">
+                  <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Save Course First</h3>
+                  <p className="text-gray-600">Please save the course before adding quizzes.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <QuizManager />
+            )}
+          </TabsContent>
+
+          {/* Settings */}
+          <TabsContent value="settings">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Course Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium text-gray-900">Publish Course</h3>
+                    <p className="text-sm text-gray-600">Make this course visible to students</p>
+                  </div>
+                  <Switch
+                    checked={courseData.is_published}
+                    onCheckedChange={(checked) => setCourseData({ ...courseData, is_published: checked })}
+                  />
+                </div>
+
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <h3 className="font-medium text-amber-800 mb-2">Publishing Guidelines</h3>
+                  <ul className="text-sm text-amber-700 space-y-1">
+                    <li>• Ensure course has a clear title and description</li>
+                    <li>• Add at least one section with content</li>
+                    <li>• Set appropriate pricing</li>
+                    <li>• Upload a course thumbnail</li>
+                    <li>• Review all content for accuracy</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
