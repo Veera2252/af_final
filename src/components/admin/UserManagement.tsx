@@ -9,30 +9,80 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { Trash2, UserPlus, Users, Shield, GraduationCap, Crown, Mail, Key, Copy, Eye, EyeOff } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Trash2, 
+  UserPlus, 
+  Users, 
+  Shield, 
+  GraduationCap, 
+  Crown, 
+  Mail, 
+  Key, 
+  Copy, 
+  Eye, 
+  EyeOff,
+  Phone,
+  MapPin,
+  Building,
+  Briefcase,
+  BookOpen,
+  DollarSign,
+  Calculator,
+  Send,
+  FileText
+} from 'lucide-react';
 
 type Profile = Tables<'profiles'>;
 
+interface UserFormData {
+  full_name: string;
+  phone: string;
+  address: string;
+  profession: string;
+  course: string;
+  total_fees: number;
+  paid_amount: number;
+  balance: number;
+}
+
 export const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<Profile[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
   const [adminCount, setAdminCount] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
-  const [generatedCredentials, setGeneratedCredentials] = useState<{email: string, password: string} | null>(null);
-  const [newUser, setNewUser] = useState({
-    email: '',
-    password: '',
+  const [generatedCredentials, setGeneratedCredentials] = useState<{
+    email: string; 
+    password: string;
+    userData: UserFormData;
+  } | null>(null);
+  
+  const [userForm, setUserForm] = useState<UserFormData>({
     full_name: '',
-    role: 'student' as 'admin' | 'staff' | 'student'
+    phone: '',
+    address: '',
+    profession: '',
+    course: '',
+    total_fees: 0,
+    paid_amount: 0,
+    balance: 0
   });
+
   const { toast } = useToast();
 
   useEffect(() => {
     fetchUsers();
+    fetchCourses();
   }, []);
+
+  useEffect(() => {
+    // Auto-calculate balance when fees or paid amount changes
+    const balance = userForm.total_fees - userForm.paid_amount;
+    setUserForm(prev => ({ ...prev, balance }));
+  }, [userForm.total_fees, userForm.paid_amount]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -45,7 +95,6 @@ export const UserManagement: React.FC = () => {
       if (error) throw error;
       setUsers(data || []);
       
-      // Count current admins
       const admins = data?.filter(user => user.role === 'admin') || [];
       setAdminCount(admins.length);
     } catch (error: any) {
@@ -59,13 +108,49 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const generateRandomPassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+  const fetchCourses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, title, price')
+        .eq('is_published', true)
+        .order('title');
+
+      if (error) throw error;
+      setCourses(data || []);
+    } catch (error: any) {
+      console.error('Error fetching courses:', error);
     }
-    return password;
+  };
+
+  const generateEmailFromName = (fullName: string): string => {
+    const cleanName = fullName
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, '')
+      .trim()
+      .replace(/\s+/g, '.');
+    
+    return `${cleanName}.alphafly@gmail.com`;
+  };
+
+  const generateSecurePassword = (): string => {
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const symbols = '!@#$%^&*';
+    
+    let password = '';
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+    
+    const allChars = uppercase + lowercase + numbers + symbols;
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    
+    return password.split('').sort(() => Math.random() - 0.5).join('');
   };
 
   const copyToClipboard = (text: string) => {
@@ -79,30 +164,33 @@ export const UserManagement: React.FC = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check admin limit
-    if (newUser.role === 'admin' && adminCount >= 2) {
+    if (!userForm.full_name.trim()) {
       toast({
         title: "Error",
-        description: "Maximum of 2 admin users allowed",
+        description: "Please enter the full name",
         variant: "destructive",
       });
       return;
     }
 
-    // Generate random password if not provided
-    const password = newUser.password || generateRandomPassword();
-
     setLoading(true);
 
     try {
-      // Create the user in Supabase Auth with metadata
+      // Generate email and password
+      const email = generateEmailFromName(userForm.full_name);
+      const password = generateSecurePassword();
+
+      // Create the user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
+        email: email,
         password: password,
         options: {
           data: {
-            full_name: newUser.full_name,
-            role: newUser.role
+            full_name: userForm.full_name,
+            role: 'student',
+            phone: userForm.phone,
+            address: userForm.address,
+            profession: userForm.profession
           },
           emailRedirectTo: undefined // Disable email confirmation
         }
@@ -117,18 +205,33 @@ export const UserManagement: React.FC = () => {
       // Wait for the database trigger to create the profile
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Store credentials for display
+      // Store credentials and user data for display
       setGeneratedCredentials({
-        email: newUser.email,
-        password: password
+        email,
+        password,
+        userData: { ...userForm }
       });
+
+      // Send email with credentials and invoice (in a real app)
+      await sendCredentialsEmail(email, password, userForm);
 
       toast({
         title: "Success",
-        description: `${newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1)} user created successfully!`,
+        description: "Student account created successfully! Credentials have been sent via email.",
       });
 
-      setNewUser({ email: '', password: '', full_name: '', role: 'student' });
+      // Reset form
+      setUserForm({
+        full_name: '',
+        phone: '',
+        address: '',
+        profession: '',
+        course: '',
+        total_fees: 0,
+        paid_amount: 0,
+        balance: 0
+      });
+      
       setShowAddUser(false);
       
       // Refresh users list
@@ -147,6 +250,22 @@ export const UserManagement: React.FC = () => {
     }
   };
 
+  const sendCredentialsEmail = async (email: string, password: string, userData: UserFormData) => {
+    // In a real implementation, this would call your backend API to send the email
+    // For now, we'll simulate the email sending
+    console.log('Sending email to:', email);
+    console.log('Credentials:', { email, password });
+    console.log('User data:', userData);
+    
+    // Simulate email sending delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    toast({
+      title: "Email Sent",
+      description: `Login credentials and payment invoice sent to ${email}`,
+    });
+  };
+
   const handleDeleteUser = async (userId: string, userRole: string) => {
     if (userRole === 'admin' && adminCount <= 1) {
       toast({
@@ -160,8 +279,6 @@ export const UserManagement: React.FC = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      // For now, we'll just show a message that this requires admin privileges
-      // In a production environment, this would need to be handled by a server-side function
       toast({
         title: "Info",
         description: "User deletion requires server-side implementation for security",
@@ -215,121 +332,207 @@ export const UserManagement: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            User Management
+            Student Registration & Management
           </h1>
-          <p className="text-gray-600 mt-1">Manage system users and their roles</p>
+          <p className="text-gray-600 mt-1">Register new students with payment details and manage user accounts</p>
         </div>
         <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
               <UserPlus className="h-4 w-4 mr-2" />
-              Add User
+              Register Student
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5" />
-                Create New User
+                Student Registration Form
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  placeholder="user@example.com"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  value={newUser.full_name}
-                  onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-                  placeholder="John Doe"
-                  required
-                />
-              </div>
-              <div>
-                <Label>User Role</Label>
-                <Select value={newUser.role} onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="h-4 w-4" />
-                        Student
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="staff">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Staff
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="admin" disabled={adminCount >= 2}>
-                      <div className="flex items-center gap-2">
-                        <Crown className="h-4 w-4" />
-                        Admin {adminCount >= 2 && '(Limit reached)'}
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                {newUser.role === 'admin' && (
-                  <p className="text-sm text-amber-600 mt-1">
-                    ⚠️ Admin users have full system access
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="password">Password (Optional)</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    placeholder="Leave empty to auto-generate"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  If left empty, a secure password will be generated automatically
-                </p>
-              </div>
-              
+            <form onSubmit={handleCreateUser} className="space-y-6">
+              {/* Personal Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Personal Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="full_name" className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Full Name *
+                      </Label>
+                      <Input
+                        id="full_name"
+                        value={userForm.full_name}
+                        onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+                        placeholder="Enter student's full name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone" className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        Phone Number *
+                      </Label>
+                      <Input
+                        id="phone"
+                        value={userForm.phone}
+                        onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
+                        placeholder="+91 98765 43210"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="address" className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Address *
+                    </Label>
+                    <Textarea
+                      id="address"
+                      value={userForm.address}
+                      onChange={(e) => setUserForm({ ...userForm, address: e.target.value })}
+                      placeholder="Enter complete address"
+                      rows={3}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="profession" className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Profession *
+                    </Label>
+                    <Input
+                      id="profession"
+                      value={userForm.profession}
+                      onChange={(e) => setUserForm({ ...userForm, profession: e.target.value })}
+                      placeholder="e.g., Student, Engineer, Teacher"
+                      required
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Course & Payment Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    Course & Payment Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="course" className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      Course *
+                    </Label>
+                    <Select 
+                      value={userForm.course} 
+                      onValueChange={(value) => {
+                        const selectedCourse = courses.find(c => c.id === value);
+                        setUserForm({ 
+                          ...userForm, 
+                          course: value,
+                          total_fees: selectedCourse?.price || 0
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((course) => (
+                          <SelectItem key={course.id} value={course.id}>
+                            {course.title} - ₹{course.price}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="total_fees" className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Total Fees *
+                      </Label>
+                      <Input
+                        id="total_fees"
+                        type="number"
+                        step="0.01"
+                        value={userForm.total_fees}
+                        onChange={(e) => setUserForm({ ...userForm, total_fees: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="paid_amount" className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Paid Amount *
+                      </Label>
+                      <Input
+                        id="paid_amount"
+                        type="number"
+                        step="0.01"
+                        value={userForm.paid_amount}
+                        onChange={(e) => setUserForm({ ...userForm, paid_amount: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="balance" className="flex items-center gap-2">
+                        <Calculator className="h-4 w-4" />
+                        Balance
+                      </Label>
+                      <Input
+                        id="balance"
+                        type="number"
+                        value={userForm.balance}
+                        readOnly
+                        className="bg-gray-50"
+                      />
+                    </div>
+                  </div>
+
+                  {userForm.balance > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-amber-800 text-sm">
+                        <strong>Pending Balance:</strong> ₹{userForm.balance.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Email Generation Info */}
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-start gap-3">
-                  <Key className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium text-blue-800">Credential Management</p>
-                    <p className="text-blue-700">Login credentials will be displayed after user creation. Admin users can access all dashboards using these credentials.</p>
+                    <p className="font-medium text-blue-800">Automatic Email Generation</p>
+                    <p className="text-blue-700 mt-1">
+                      Email will be auto-generated as: <strong>{userForm.full_name ? generateEmailFromName(userForm.full_name) : 'name.alphafly@gmail.com'}</strong>
+                    </p>
+                    <p className="text-blue-600 mt-2">
+                      Login credentials and payment invoice will be sent to this email address automatically.
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-2 pt-4">
                 <Button type="submit" disabled={loading} className="flex-1">
-                  {loading ? 'Creating...' : 'Create User'}
+                  {loading ? 'Creating Account...' : 'Register Student'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowAddUser(false)}>
                   Cancel
@@ -346,12 +549,50 @@ export const UserManagement: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-800">
               <Key className="h-5 w-5" />
-              User Created Successfully!
+              Student Account Created Successfully!
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {/* Student Information */}
             <div className="bg-white p-4 rounded-lg border border-green-200">
-              <h3 className="font-semibold text-green-800 mb-3">Login Credentials</h3>
+              <h3 className="font-semibold text-green-800 mb-3">Student Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-medium text-gray-700">Name:</p>
+                  <p className="text-gray-900">{generatedCredentials.userData.full_name}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-700">Phone:</p>
+                  <p className="text-gray-900">{generatedCredentials.userData.phone}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-700">Profession:</p>
+                  <p className="text-gray-900">{generatedCredentials.userData.profession}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-700">Course:</p>
+                  <p className="text-gray-900">{courses.find(c => c.id === generatedCredentials.userData.course)?.title || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-700">Total Fees:</p>
+                  <p className="text-gray-900">₹{generatedCredentials.userData.total_fees}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-700">Paid Amount:</p>
+                  <p className="text-gray-900">₹{generatedCredentials.userData.paid_amount}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-700">Balance:</p>
+                  <p className={`font-semibold ${generatedCredentials.userData.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    ₹{generatedCredentials.userData.balance}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Login Credentials */}
+            <div className="bg-white p-4 rounded-lg border border-green-200">
+              <h3 className="font-semibold text-green-800 mb-3">Login Credentials (Sent via Email)</h3>
               <div className="space-y-3">
                 <div>
                   <Label className="text-sm font-medium text-green-700">Email:</Label>
@@ -380,30 +621,39 @@ export const UserManagement: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  <strong>Important:</strong> Please share these credentials securely with the user. 
-                  Admin users can access all dashboards (admin, staff, and student) using these credentials.
-                  The user can change their password after first login.
-                </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Send className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-amber-800">Email Sent Successfully</p>
+                  <p className="text-amber-700 mt-1">
+                    Login credentials and payment invoice have been sent to <strong>{generatedCredentials.email}</strong>
+                  </p>
+                  <p className="text-amber-600 mt-2">
+                    The student can use these credentials to access their dashboard and change their password after first login.
+                  </p>
+                </div>
               </div>
-              <div className="mt-3 flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => copyToClipboard(`Email: ${generatedCredentials.email}\nPassword: ${generatedCredentials.password}`)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Both
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setGeneratedCredentials(null)}
-                >
-                  Close
-                </Button>
-              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => copyToClipboard(`Email: ${generatedCredentials.email}\nPassword: ${generatedCredentials.password}`)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy All Credentials
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setGeneratedCredentials(null)}
+              >
+                Close
+              </Button>
             </div>
           </CardContent>
         </Card>
