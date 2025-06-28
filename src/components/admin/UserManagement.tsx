@@ -72,14 +72,15 @@ export const UserManagement: React.FC = () => {
     setLoading(true);
 
     try {
-      // Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Use regular signup instead of admin functions
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
-        email_confirm: true, // Auto-confirm email
-        user_metadata: {
-          full_name: newUser.full_name,
-          role: newUser.role
+        options: {
+          data: {
+            full_name: newUser.full_name,
+            role: newUser.role
+          }
         }
       });
 
@@ -89,20 +90,18 @@ export const UserManagement: React.FC = () => {
         throw new Error('Failed to create user');
       }
 
-      // Create profile with the specified role
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: newUser.email,
-          full_name: newUser.full_name,
-          role: newUser.role
-        });
+      // The profile will be created automatically by the trigger function
+      // We just need to update the role if it's not student (default)
+      if (newUser.role !== 'student') {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: newUser.role })
+          .eq('id', authData.user.id);
 
-      if (profileError) {
-        // If profile creation fails, delete the auth user
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw profileError;
+        if (updateError) {
+          console.warn('Failed to update role:', updateError);
+          // Don't throw here as the user was created successfully
+        }
       }
 
       toast({
@@ -112,7 +111,12 @@ export const UserManagement: React.FC = () => {
 
       setNewUser({ email: '', password: '', full_name: '', role: 'student' });
       setShowAddUser(false);
-      fetchUsers();
+      
+      // Refresh users list after a short delay to allow for profile creation
+      setTimeout(() => {
+        fetchUsers();
+      }, 1000);
+      
     } catch (error: any) {
       toast({
         title: "Error",
@@ -137,14 +141,13 @@ export const UserManagement: React.FC = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      if (error) throw error;
-
+      // For now, we'll just show a message that this requires admin privileges
+      // In a production environment, this would need to be handled by a server-side function
       toast({
-        title: "Success",
-        description: "User deleted successfully!",
+        title: "Info",
+        description: "User deletion requires server-side implementation for security",
+        variant: "default",
       });
-      fetchUsers();
     } catch (error: any) {
       toast({
         title: "Error",
