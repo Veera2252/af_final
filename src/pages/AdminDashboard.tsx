@@ -9,17 +9,33 @@ import {
   BookOpen, 
   DollarSign, 
   TrendingUp, 
-  Award,
-  FileText,
-  BarChart3,
-  Crown,
-  Shield,
-  GraduationCap,
   ArrowUpRight,
   Activity,
   Calendar,
-  Target
+  Target,
+  BarChart3,
+  PieChart,
+  LineChart,
+  Bell,
+  Search,
+  Settings,
+  Plus
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart as RechartsPieChart,
+  Cell,
+  LineChart as RechartsLineChart,
+  Line,
+  Area,
+  AreaChart
+} from 'recharts';
 
 export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -32,11 +48,18 @@ export const AdminDashboard: React.FC = () => {
     activeStudents: 0,
     completionRate: 0
   });
+  const [chartData, setChartData] = useState({
+    enrollmentTrend: [],
+    courseStats: [],
+    paymentTrend: [],
+    userDistribution: []
+  });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchDashboardStats();
+    fetchChartData();
   }, []);
 
   const fetchDashboardStats = async () => {
@@ -114,26 +137,142 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const fetchChartData = async () => {
+    try {
+      // Fetch enrollment trend data (last 6 months)
+      const enrollmentTrendData = [
+        { month: 'Jan', enrollments: 45, revenue: 12500 },
+        { month: 'Feb', enrollments: 52, revenue: 15200 },
+        { month: 'Mar', enrollments: 48, revenue: 14100 },
+        { month: 'Apr', enrollments: 61, revenue: 18300 },
+        { month: 'May', enrollments: 55, revenue: 16800 },
+        { month: 'Jun', enrollments: 67, revenue: 21200 }
+      ];
+
+      // Fetch course statistics
+      const { data: courses } = await supabase
+        .from('courses')
+        .select(`
+          title,
+          enrollments(count)
+        `);
+
+      const courseStatsData = courses?.slice(0, 5).map(course => ({
+        name: course.title.length > 15 ? course.title.substring(0, 15) + '...' : course.title,
+        enrollments: course.enrollments?.length || 0
+      })) || [];
+
+      // User distribution data
+      const { data: userRoles } = await supabase
+        .from('profiles')
+        .select('role');
+
+      const roleCount = userRoles?.reduce((acc, user) => {
+        acc[user.role] = (acc[user.role] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      const userDistributionData = [
+        { name: 'Students', value: roleCount.student || 0, color: '#10b981' },
+        { name: 'Staff', value: roleCount.staff || 0, color: '#3b82f6' },
+        { name: 'Admins', value: roleCount.admin || 0, color: '#f59e0b' }
+      ];
+
+      setChartData({
+        enrollmentTrend: enrollmentTrendData,
+        courseStats: courseStatsData,
+        paymentTrend: enrollmentTrendData,
+        userDistribution: userDistributionData
+      });
+    } catch (error: any) {
+      console.error('Error fetching chart data:', error);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 font-medium">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="container mx-auto py-8 space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600 text-lg">Welcome back! Here's what's happening with your platform today.</p>
-        </div>
+      {/* Modern Navigation Bar */}
+      <div className="bg-white/95 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <BarChart3 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Admin Dashboard
+                  </h1>
+                  <p className="text-xs text-gray-500">System Overview & Analytics</p>
+                </div>
+              </div>
+              
+              <nav className="hidden md:flex items-center space-x-1">
+                <Link to="/admin/users">
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50">
+                    <Users className="h-4 w-4 mr-2" />
+                    Users
+                  </Button>
+                </Link>
+                <Link to="/admin/courses">
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Courses
+                  </Button>
+                </Link>
+                <Link to="/admin/payments">
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50">
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Payments
+                  </Button>
+                </Link>
+              </nav>
+            </div>
 
-        {/* Key Metrics */}
+            <div className="flex items-center space-x-4">
+              <div className="hidden md:flex items-center space-x-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  />
+                </div>
+                <Button variant="ghost" size="sm" className="relative">
+                  <Bell className="h-5 w-5 text-gray-600" />
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">3</span>
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <Settings className="h-5 w-5 text-gray-600" />
+                </Button>
+              </div>
+              
+              <Link to="/admin/courses/new">
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Course
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto py-8 px-6 space-y-8">
+        {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
             <CardContent className="p-6">
@@ -166,7 +305,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-amber-100 text-sm font-medium">Total Revenue</p>
-                  <p className="text-3xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
+                  <p className="text-3xl font-bold">₹{stats.totalRevenue.toFixed(0)}</p>
                   <p className="text-amber-100 text-xs mt-1">{stats.pendingPayments} pending</p>
                 </div>
                 <DollarSign className="h-12 w-12 text-amber-200" />
@@ -188,53 +327,173 @@ export const AdminDashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* Secondary Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Enrollment Trend Chart */}
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+              <CardTitle className="flex items-center gap-2">
+                <LineChart className="h-5 w-5 text-blue-600" />
+                Student Enrollment Trend
+              </CardTitle>
+            </CardHeader>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium">Total Enrollments</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalEnrollments}</p>
-                </div>
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <Activity className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={chartData.enrollmentTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+                  <YAxis stroke="#6b7280" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }} 
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="enrollments" 
+                    stroke="#3b82f6" 
+                    fill="url(#enrollmentGradient)" 
+                    strokeWidth={3}
+                  />
+                  <defs>
+                    <linearGradient id="enrollmentGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                </AreaChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+          {/* Course Performance Chart */}
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-emerald-50 to-blue-50 border-b">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-emerald-600" />
+                Course Enrollments
+              </CardTitle>
+            </CardHeader>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium">Completion Rate</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.completionRate}%</p>
-                </div>
-                <div className="bg-green-100 p-3 rounded-full">
-                  <Target className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData.courseStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+                  <YAxis stroke="#6b7280" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }} 
+                  />
+                  <Bar 
+                    dataKey="enrollments" 
+                    fill="url(#courseGradient)" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <defs>
+                    <linearGradient id="courseGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.6}/>
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+          {/* Revenue Trend Chart */}
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-amber-600" />
+                Revenue Trend
+              </CardTitle>
+            </CardHeader>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium">Pending Payments</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pendingPayments}</p>
-                </div>
-                <div className="bg-amber-100 p-3 rounded-full">
-                  <Calendar className="h-6 w-6 text-amber-600" />
-                </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <RechartsLineChart data={chartData.paymentTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+                  <YAxis stroke="#6b7280" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }} 
+                    formatter={(value) => [`₹${value}`, 'Revenue']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#f59e0b" 
+                    strokeWidth={3}
+                    dot={{ fill: '#f59e0b', strokeWidth: 2, r: 6 }}
+                    activeDot={{ r: 8, stroke: '#f59e0b', strokeWidth: 2 }}
+                  />
+                </RechartsLineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* User Distribution Chart */}
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5 text-purple-600" />
+                User Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <RechartsPieChart>
+                  <Pie
+                    data={chartData.userDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {chartData.userDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }} 
+                  />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+              <div className="flex justify-center space-x-6 mt-4">
+                {chartData.userDistribution.map((entry, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: entry.color }}
+                    ></div>
+                    <span className="text-sm text-gray-600">{entry.name}: {entry.value}</span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Management Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center justify-between">
@@ -296,72 +555,6 @@ export const AdminDashboard: React.FC = () => {
               <Link to="/admin/payments">
                 <Button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
                   View Payments
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
-                  </div>
-                  <span>Analytics</span>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-purple-600 transition-colors" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">View detailed analytics, reports, and performance metrics.</p>
-              <Link to="/admin/analytics">
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800">
-                  View Analytics
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-3 rounded-lg">
-                    <Award className="h-6 w-6 text-white" />
-                  </div>
-                  <span>Assessment Management</span>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Manage quizzes, assignments, and assessments across all courses.</p>
-              <Link to="/admin/assessments">
-                <Button className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800">
-                  Manage Assessments
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-3 rounded-lg">
-                    <FileText className="h-6 w-6 text-white" />
-                  </div>
-                  <span>Content Management</span>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-rose-600 transition-colors" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Manage all course content, materials, and resources.</p>
-              <Link to="/admin/content">
-                <Button className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800">
-                  Manage Content
                 </Button>
               </Link>
             </CardContent>
