@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { 
   Users, 
   BookOpen, 
@@ -19,8 +20,17 @@ import {
   Bell,
   Search,
   Settings,
-  Plus
+  Plus,
+  Home,
+  CreditCard,
+  LogOut,
+  Menu,
+  X,
+  Crown,
+  ChevronRight
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   BarChart,
   Bar,
@@ -56,12 +66,20 @@ export const AdminDashboard: React.FC = () => {
     userDistribution: []
   });
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
+  const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardStats();
     fetchChartData();
   }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   const fetchDashboardStats = async () => {
     try {
@@ -190,6 +208,15 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const sidebarItems = [
+    { icon: Home, label: 'Dashboard', path: '/admin/dashboard', active: true },
+    { icon: Users, label: 'User Management', path: '/admin/users' },
+    { icon: BookOpen, label: 'Course Management', path: '/admin/courses' },
+    { icon: CreditCard, label: 'Payment Management', path: '/admin/payments' },
+    { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
+    { icon: Settings, label: 'Settings', path: '/admin/settings' },
+  ];
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -202,366 +229,444 @@ export const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Modern Navigation Bar */}
-      <div className="bg-white/95 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <BarChart3 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Admin Dashboard
-                  </h1>
-                  <p className="text-xs text-gray-500">System Overview & Analytics</p>
-                </div>
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200/60 shadow-2xl transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:inset-0`}>
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200/50">
+            <Link to="/" className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <BookOpen className="h-6 w-6 text-white" />
               </div>
-              
-              <nav className="hidden md:flex items-center space-x-1">
-                <Link to="/admin/users">
-                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50">
-                    <Users className="h-4 w-4 mr-2" />
-                    Users
-                  </Button>
+              <div>
+                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  AlphaFly
+                </span>
+                <div className="text-xs text-gray-500 font-medium">Admin Panel</div>
+              </div>
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {sidebarItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                    item.active
+                      ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 shadow-md border border-blue-200/50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50/80'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Icon className={`h-5 w-5 ${item.active ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 ${item.active ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
                 </Link>
-                <Link to="/admin/courses">
-                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50">
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    Courses
-                  </Button>
-                </Link>
-                <Link to="/admin/payments">
-                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 hover:bg-blue-50">
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Payments
-                  </Button>
-                </Link>
-              </nav>
+              );
+            })}
+          </nav>
+
+          {/* User Profile */}
+          <div className="p-4 border-t border-gray-200/50">
+            <div className="flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100">
+              <Avatar className="h-10 w-10 ring-2 ring-gray-200">
+                <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-600 text-white font-semibold text-sm">
+                  {profile?.full_name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-900 truncate">{profile?.full_name}</span>
+                  <Crown className="h-4 w-4 text-red-600" />
+                </div>
+                <div className="text-xs text-gray-500">Administrator</div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="text-gray-500 hover:text-red-600"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+        {/* Top Header */}
+        <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200/60 shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="lg:hidden"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Dashboard Overview
+                </h1>
+                <p className="text-sm text-gray-600">Welcome back! Here's what's happening today.</p>
+              </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-3">
+              {/* Search */}
+              <div className="hidden md:flex items-center">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <input
                     type="text"
                     placeholder="Search..."
-                    className="pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                    className="pl-10 pr-4 py-2 w-64 bg-gray-50/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200"
                   />
                 </div>
-                <Button variant="ghost" size="sm" className="relative">
-                  <Bell className="h-5 w-5 text-gray-600" />
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">3</span>
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <Settings className="h-5 w-5 text-gray-600" />
-                </Button>
               </div>
-              
+
+              {/* New Course Button */}
               <Link to="/admin/courses/new">
                 <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
                   <Plus className="h-4 w-4 mr-2" />
                   New Course
                 </Button>
               </Link>
+
+              {/* Notifications */}
+              <Button variant="ghost" size="sm" className="relative">
+                <Bell className="h-5 w-5 text-gray-600" />
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs bg-red-500 hover:bg-red-500">
+                  3
+                </Badge>
+              </Button>
+
+              {/* Settings */}
+              <Button variant="ghost" size="sm">
+                <Settings className="h-5 w-5 text-gray-600" />
+              </Button>
             </div>
           </div>
-        </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <main className="flex-1 overflow-y-auto p-6 space-y-8">
+          {/* Key Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">Total Users</p>
+                    <p className="text-3xl font-bold">{stats.totalUsers}</p>
+                    <p className="text-blue-100 text-xs mt-1">All registered users</p>
+                  </div>
+                  <Users className="h-12 w-12 text-blue-200" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-100 text-sm font-medium">Total Courses</p>
+                    <p className="text-3xl font-bold">{stats.totalCourses}</p>
+                    <p className="text-emerald-100 text-xs mt-1">{stats.publishedCourses} published</p>
+                  </div>
+                  <BookOpen className="h-12 w-12 text-emerald-200" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-100 text-sm font-medium">Total Revenue</p>
+                    <p className="text-3xl font-bold">₹{stats.totalRevenue.toFixed(0)}</p>
+                    <p className="text-amber-100 text-xs mt-1">{stats.pendingPayments} pending</p>
+                  </div>
+                  <DollarSign className="h-12 w-12 text-amber-200" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-purple-100 text-sm font-medium">Active Students</p>
+                    <p className="text-3xl font-bold">{stats.activeStudents}</p>
+                    <p className="text-purple-100 text-xs mt-1">{stats.completionRate}% completion rate</p>
+                  </div>
+                  <TrendingUp className="h-12 w-12 text-purple-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Enrollment Trend Chart */}
+            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <LineChart className="h-5 w-5 text-blue-600" />
+                  Student Enrollment Trend
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={chartData.enrollmentTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+                    <YAxis stroke="#6b7280" fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }} 
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="enrollments" 
+                      stroke="#3b82f6" 
+                      fill="url(#enrollmentGradient)" 
+                      strokeWidth={3}
+                    />
+                    <defs>
+                      <linearGradient id="enrollmentGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Course Performance Chart */}
+            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-emerald-50 to-blue-50 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-emerald-600" />
+                  Course Enrollments
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData.courseStats}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+                    <YAxis stroke="#6b7280" fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }} 
+                    />
+                    <Bar 
+                      dataKey="enrollments" 
+                      fill="url(#courseGradient)" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <defs>
+                      <linearGradient id="courseGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Revenue Trend Chart */}
+            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-amber-600" />
+                  Revenue Trend
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <RechartsLineChart data={chartData.paymentTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+                    <YAxis stroke="#6b7280" fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }} 
+                      formatter={(value) => [`₹${value}`, 'Revenue']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#f59e0b" 
+                      strokeWidth={3}
+                      dot={{ fill: '#f59e0b', strokeWidth: 2, r: 6 }}
+                      activeDot={{ r: 8, stroke: '#f59e0b', strokeWidth: 2 }}
+                    />
+                  </RechartsLineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* User Distribution Chart */}
+            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5 text-purple-600" />
+                  User Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <RechartsPieChart>
+                    <Pie
+                      data={chartData.userDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {chartData.userDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      }} 
+                    />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+                <div className="flex justify-center space-x-6 mt-4">
+                  {chartData.userDistribution.map((entry, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: entry.color }}
+                      ></div>
+                      <span className="text-sm text-gray-600">{entry.name}: {entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg">
+                      <Users className="h-6 w-6 text-white" />
+                    </div>
+                    <span>User Management</span>
+                  </div>
+                  <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-4">Manage all system users, roles, and permissions with advanced controls.</p>
+                <Link to="/admin/users">
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
+                    Manage Users
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 rounded-lg">
+                      <BookOpen className="h-6 w-6 text-white" />
+                    </div>
+                    <span>Course Management</span>
+                  </div>
+                  <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-4">Create, edit, and manage all courses with comprehensive tools.</p>
+                <Link to="/admin/courses">
+                  <Button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
+                    Manage Courses
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-3 rounded-lg">
+                      <DollarSign className="h-6 w-6 text-white" />
+                    </div>
+                    <span>Payment Management</span>
+                  </div>
+                  <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-amber-600 transition-colors" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-4">View and manage all payments, transactions, and revenue.</p>
+                <Link to="/admin/payments">
+                  <Button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
+                    View Payments
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
 
-      <div className="container mx-auto py-8 px-6 space-y-8">
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Users</p>
-                  <p className="text-3xl font-bold">{stats.totalUsers}</p>
-                  <p className="text-blue-100 text-xs mt-1">All registered users</p>
-                </div>
-                <Users className="h-12 w-12 text-blue-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-emerald-100 text-sm font-medium">Total Courses</p>
-                  <p className="text-3xl font-bold">{stats.totalCourses}</p>
-                  <p className="text-emerald-100 text-xs mt-1">{stats.publishedCourses} published</p>
-                </div>
-                <BookOpen className="h-12 w-12 text-emerald-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-amber-100 text-sm font-medium">Total Revenue</p>
-                  <p className="text-3xl font-bold">₹{stats.totalRevenue.toFixed(0)}</p>
-                  <p className="text-amber-100 text-xs mt-1">{stats.pendingPayments} pending</p>
-                </div>
-                <DollarSign className="h-12 w-12 text-amber-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Active Students</p>
-                  <p className="text-3xl font-bold">{stats.activeStudents}</p>
-                  <p className="text-purple-100 text-xs mt-1">{stats.completionRate}% completion rate</p>
-                </div>
-                <TrendingUp className="h-12 w-12 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Enrollment Trend Chart */}
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-              <CardTitle className="flex items-center gap-2">
-                <LineChart className="h-5 w-5 text-blue-600" />
-                Student Enrollment Trend
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={chartData.enrollmentTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    }} 
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="enrollments" 
-                    stroke="#3b82f6" 
-                    fill="url(#enrollmentGradient)" 
-                    strokeWidth={3}
-                  />
-                  <defs>
-                    <linearGradient id="enrollmentGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
-                    </linearGradient>
-                  </defs>
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Course Performance Chart */}
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-emerald-50 to-blue-50 border-b">
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-emerald-600" />
-                Course Enrollments
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData.courseStats}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    }} 
-                  />
-                  <Bar 
-                    dataKey="enrollments" 
-                    fill="url(#courseGradient)" 
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <defs>
-                    <linearGradient id="courseGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.6}/>
-                    </linearGradient>
-                  </defs>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Revenue Trend Chart */}
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-                Revenue Trend
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsLineChart data={chartData.paymentTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    }} 
-                    formatter={(value) => [`₹${value}`, 'Revenue']}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#f59e0b" 
-                    strokeWidth={3}
-                    dot={{ fill: '#f59e0b', strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8, stroke: '#f59e0b', strokeWidth: 2 }}
-                  />
-                </RechartsLineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* User Distribution Chart */}
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
-              <CardTitle className="flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-purple-600" />
-                User Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsPieChart>
-                  <Pie
-                    data={chartData.userDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {chartData.userDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    }} 
-                  />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center space-x-6 mt-4">
-                {chartData.userDistribution.map((entry, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: entry.color }}
-                    ></div>
-                    <span className="text-sm text-gray-600">{entry.name}: {entry.value}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <span>User Management</span>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Manage all system users, roles, and permissions with advanced controls.</p>
-              <Link to="/admin/users">
-                <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                  Manage Users
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 rounded-lg">
-                    <BookOpen className="h-6 w-6 text-white" />
-                  </div>
-                  <span>Course Management</span>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600 transition-colors" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Create, edit, and manage all courses with comprehensive tools.</p>
-              <Link to="/admin/courses">
-                <Button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
-                  Manage Courses
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-3 rounded-lg">
-                    <DollarSign className="h-6 w-6 text-white" />
-                  </div>
-                  <span>Payment Management</span>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-amber-600 transition-colors" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">View and manage all payments, transactions, and revenue.</p>
-              <Link to="/admin/payments">
-                <Button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
-                  View Payments
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };
