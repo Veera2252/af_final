@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, BookOpen, Users, BarChart3, CreditCard } from 'lucide-react';
+import { LogOut, BookOpen, Users, BarChart3, CreditCard, Home } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, profile, signOut } = useAuth();
@@ -39,14 +39,27 @@ export const Navbar: React.FC = () => {
               CourseHive LMS
             </Link>
             
+            {/* Dashboard Link */}
+            <Link 
+              to={
+                profile.role === 'admin' ? '/admin/dashboard' :
+                profile.role === 'staff' ? '/staff/dashboard' :
+                '/student/dashboard'
+              } 
+              className="flex items-center space-x-1 text-gray-700 hover:text-gray-900"
+            >
+              <Home className="h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
+            
             {profile.role === 'student' && (
               <>
                 <Link to="/courses" className="flex items-center space-x-1 text-gray-700 hover:text-gray-900">
                   <BookOpen className="h-4 w-4" />
-                  <span>Courses</span>
+                  <span>Browse Courses</span>
                 </Link>
-                <Link to="/my-courses" className="text-gray-700 hover:text-gray-900">
-                  My Courses
+                <Link to="/student/dashboard" className="text-gray-700 hover:text-gray-900">
+                  My Learning
                 </Link>
               </>
             )}
@@ -65,7 +78,7 @@ export const Navbar: React.FC = () => {
                     </Link>
                     <Link to="/admin/dashboard" className="flex items-center space-x-1 text-gray-700 hover:text-gray-900">
                       <BarChart3 className="h-4 w-4" />
-                      <span>Dashboard</span>
+                      <span>Analytics</span>
                     </Link>
                     <Link to="/admin/payments" className="flex items-center space-x-1 text-gray-700 hover:text-gray-900">
                       <CreditCard className="h-4 w-4" />

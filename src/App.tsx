@@ -7,6 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { HomePage } from "@/pages/HomePage";
+import { AdminDashboard } from "@/pages/AdminDashboard";
+import { StaffDashboard } from "@/pages/StaffDashboard";
+import { StudentDashboard } from "@/pages/StudentDashboard";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { CourseList } from "@/components/courses/CourseList";
 import { CourseEditor } from "@/components/courses/CourseEditor";
@@ -31,11 +34,21 @@ const App = () => (
               <Route path="/courses" element={<CourseList />} />
               <Route path="/course/:courseId" element={<CourseViewer />} />
               <Route path="/course/:courseId/preview" element={<CourseViewer />} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<UserManagement />} />
               <Route path="/admin/courses" element={<CourseList />} />
               <Route path="/admin/courses/:courseId" element={<CourseEditor />} />
               <Route path="/admin/courses/:courseId/quizzes" element={<QuizManager />} />
               <Route path="/admin/courses/:courseId/assignments" element={<AssignmentManager />} />
+              
+              {/* Staff Routes */}
+              <Route path="/staff/dashboard" element={<StaffDashboard />} />
+              
+              {/* Student Routes */}
+              <Route path="/student/dashboard" element={<StudentDashboard />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>

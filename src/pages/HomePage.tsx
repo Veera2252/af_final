@@ -1,14 +1,28 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Award, TrendingUp } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Auto-redirect authenticated users to their appropriate dashboard
+    if (user && profile) {
+      if (profile.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (profile.role === 'staff') {
+        navigate('/staff/dashboard');
+      } else if (profile.role === 'student') {
+        navigate('/student/dashboard');
+      }
+    }
+  }, [user, profile, navigate]);
 
   if (!user) {
     return (
@@ -74,106 +88,11 @@ export const HomePage: React.FC = () => {
     );
   }
 
+  // This will only render briefly before redirect
   return (
     <div className="container mx-auto py-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {profile?.full_name}!
-        </h1>
-        <p className="text-gray-600">
-          {profile?.role === 'admin' && 'Manage your learning platform from the admin dashboard.'}
-          {profile?.role === 'staff' && 'Create and manage courses for your students.'}
-          {profile?.role === 'student' && 'Continue your learning journey with our courses.'}
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {profile?.role === 'student' && (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BookOpen className="h-5 w-5 mr-2" />
-                  Browse Courses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4">Discover new courses and expand your knowledge.</p>
-                <Link to="/courses">
-                  <Button className="w-full">View All Courses</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="h-5 w-5 mr-2" />
-                  My Courses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4">Continue with your enrolled courses.</p>
-                <Link to="/my-courses">
-                  <Button variant="outline" className="w-full">My Learning</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {(profile?.role === 'admin' || profile?.role === 'staff') && (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BookOpen className="h-5 w-5 mr-2" />
-                  Manage Courses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4">Create and edit courses for your students.</p>
-                <Link to="/admin/courses">
-                  <Button className="w-full">Course Management</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {profile?.role === 'admin' && (
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Users className="h-5 w-5 mr-2" />
-                      User Management
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 mb-4">Add and manage system users.</p>
-                    <Link to="/admin/users">
-                      <Button variant="outline" className="w-full">Manage Users</Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <TrendingUp className="h-5 w-5 mr-2" />
-                      Dashboard
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 mb-4">View system statistics and analytics.</p>
-                    <Link to="/admin/dashboard">
-                      <Button variant="outline" className="w-full">View Dashboard</Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </>
-        )}
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">Redirecting to your dashboard...</h1>
       </div>
     </div>
   );
