@@ -95,7 +95,7 @@ export const UserManagement: React.FC = () => {
     setLoading(true);
 
     try {
-      // First, create the user in Supabase Auth
+      // Create the user in Supabase Auth with metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: password,
@@ -114,39 +114,8 @@ export const UserManagement: React.FC = () => {
         throw new Error('Failed to create user');
       }
 
-      // Wait for the trigger to create the profile
+      // Wait for the database trigger to create the profile
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Force update the profile with correct data
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: authData.user.id,
-          email: newUser.email,
-          full_name: newUser.full_name,
-          role: newUser.role,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        });
-
-      if (profileError) {
-        console.warn('Profile update error:', profileError);
-        // Try alternative approach
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            role: newUser.role,
-            full_name: newUser.full_name,
-            email: newUser.email
-          })
-          .eq('id', authData.user.id);
-
-        if (updateError) {
-          console.warn('Profile update alternative failed:', updateError);
-        }
-      }
 
       // Store credentials for display
       setGeneratedCredentials({
