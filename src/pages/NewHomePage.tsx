@@ -33,7 +33,8 @@ import {
   BarChart3,
   Smartphone,
   Camera,
-  Headphones
+  Headphones,
+  LogIn
 } from 'lucide-react';
 
 export const NewHomePage: React.FC = () => {
@@ -41,6 +42,7 @@ export const NewHomePage: React.FC = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     // Auto-redirect authenticated users to their appropriate dashboard
@@ -199,10 +201,11 @@ export const NewHomePage: React.FC = () => {
             <div className="flex items-center space-x-4">
               <ModeToggle />
               <Button
-                onClick={() => scrollToSection('contact')}
+                onClick={() => setShowLoginModal(true)}
                 className="hidden md:inline-flex bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
               >
-                Get Started
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
               </Button>
               
               {/* Mobile Menu Button */}
@@ -235,10 +238,11 @@ export const NewHomePage: React.FC = () => {
                   </button>
                 ))}
                 <Button
-                  onClick={() => scrollToSection('contact')}
+                  onClick={() => setShowLoginModal(true)}
                   className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                 >
-                  Get Started
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Login
                 </Button>
               </div>
             </div>
@@ -288,12 +292,11 @@ export const NewHomePage: React.FC = () => {
                 </Button>
                 <Button
                   size="lg"
-                  variant="outline"
-                  onClick={() => scrollToSection('contact')}
-                  className="border-2 border-gray-300 dark:border-gray-600 hover:border-blue-600 dark:hover:border-blue-400 px-8 py-4 text-lg font-semibold"
+                  onClick={() => setShowLoginModal(true)}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  <Heart className="h-5 w-5 mr-2" />
-                  Free Consultation
+                  <LogIn className="h-5 w-5 mr-2" />
+                  Login to Dashboard
                 </Button>
               </div>
 
@@ -564,6 +567,27 @@ export const NewHomePage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Login to Your Account</h2>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowLoginModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </Button>
+              </div>
+              <LoginForm />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

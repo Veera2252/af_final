@@ -7,7 +7,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Navbar } from "@/components/layout/Navbar";
 import { NewHomePage } from "@/pages/NewHomePage";
-import { AdminDashboard } from "@/pages/AdminDashboard";
+import { AdminDashboard, AdminLayout } from "@/pages/AdminDashboard";
 import { StaffDashboard } from "@/pages/StaffDashboard";
 import { StudentDashboard } from "@/pages/StudentDashboard";
 import { UserManagement } from "@/components/admin/UserManagement";
@@ -26,12 +26,15 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
-  const isAdminDashboard = location.pathname === '/admin/dashboard';
+  const isAdminRoute = location.pathname.startsWith('/admin');
   const isHomePage = location.pathname === '/';
+
+  // Don't show navbar for admin routes or home page
+  const showNavbar = !isAdminRoute && !isHomePage;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {!isAdminDashboard && !isHomePage && <Navbar />}
+      {showNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<NewHomePage />} />
         <Route path="/courses" element={<CourseList />} />
@@ -43,14 +46,14 @@ const AppContent = () => {
         <Route path="/payment/success/:paymentId" element={<PaymentSuccessPage />} />
         <Route path="/payment/history" element={<PaymentHistoryPage />} />
         
-        {/* Admin Routes */}
+        {/* Admin Routes - All wrapped in AdminLayout */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/users" element={<UserManagement />} />
-        <Route path="/admin/courses" element={<CourseList />} />
-        <Route path="/admin/courses/:courseId" element={<CourseEditor />} />
-        <Route path="/admin/courses/:courseId/quizzes" element={<QuizManager />} />
-        <Route path="/admin/courses/:courseId/assignments" element={<AssignmentManager />} />
-        <Route path="/admin/payments" element={<PaymentHistoryPage />} />
+        <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
+        <Route path="/admin/courses" element={<AdminLayout><CourseList /></AdminLayout>} />
+        <Route path="/admin/courses/:courseId" element={<AdminLayout><CourseEditor /></AdminLayout>} />
+        <Route path="/admin/courses/:courseId/quizzes" element={<AdminLayout><QuizManager /></AdminLayout>} />
+        <Route path="/admin/courses/:courseId/assignments" element={<AdminLayout><AssignmentManager /></AdminLayout>} />
+        <Route path="/admin/payments" element={<AdminLayout><PaymentHistoryPage /></AdminLayout>} />
         
         {/* Staff Routes */}
         <Route path="/staff/dashboard" element={<StaffDashboard />} />
