@@ -8,10 +8,12 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AdminDashboard, AdminSettings, AdminLayout } from '@/pages/AdminDashboard';
 import { StaffDashboard } from '@/pages/StaffDashboard';
 import { StudentDashboard } from '@/pages/StudentDashboard';
+import { StudentCertificates } from '@/pages/StudentCertificates';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { CourseList } from '@/components/admin/CourseList';
 import { CourseEditor } from '@/components/admin/CourseEditor';
 import { ContentManager } from '@/components/admin/ContentManager';
+import { CertificateUpload } from '@/components/admin/CertificateUpload';
 import { QuizManager } from '@/components/staff/QuizManager';
 import { AssignmentManager } from '@/components/staff/AssignmentManager';
 import { CourseViewer } from '@/components/student/CourseViewer';
@@ -47,6 +49,7 @@ function App() {
                 <Route path="courses/new" element={<AdminLayout><CourseEditor /></AdminLayout>} />
                 <Route path="courses/:id" element={<AdminLayout><CourseEditor /></AdminLayout>} />
                 <Route path="courses/:courseId/content" element={<AdminLayout><ContentManager /></AdminLayout>} />
+                <Route path="certificates" element={<AdminLayout><CertificateUpload /></AdminLayout>} />
                 <Route path="payments" element={<AdminLayout><div className="p-8"><h1>Payment Management</h1></div></AdminLayout>} />
                 <Route path="inquiries" element={<AdminLayout><InquiryManagement /></AdminLayout>} />
                 <Route path="settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
@@ -68,6 +71,8 @@ function App() {
               <Route path="/student" element={<ProtectedRoute allowedRoles={['admin', 'staff', 'student']} />}>
                 <Route path="dashboard" element={<StudentDashboard />} />
                 <Route path="courses/:courseId" element={<CourseViewer />} />
+                <Route path="certificates" element={<StudentCertificates />} />
+                <Route path="progress" element={<div className="p-8"><h1>Student Progress</h1></div>} />
               </Route>
               
               {/* Catch all */}

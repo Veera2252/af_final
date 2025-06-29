@@ -18,7 +18,9 @@ import {
   Target,
   Calendar,
   Star,
-  Trophy
+  Trophy,
+  ShoppingCart,
+  Eye
 } from 'lucide-react';
 
 interface EnrolledCourse {
@@ -34,6 +36,15 @@ interface EnrolledCourse {
   };
 }
 
+interface AvailableCourse {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string;
+  price: number;
+  created_at: string;
+}
+
 export const StudentDashboard: React.FC = () => {
   const [stats, setStats] = useState({
     enrolledCourses: 0,
@@ -46,6 +57,7 @@ export const StudentDashboard: React.FC = () => {
     certificates: 0
   });
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<AvailableCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -54,6 +66,7 @@ export const StudentDashboard: React.FC = () => {
     if (profile) {
       fetchStudentStats();
       fetchEnrolledCourses();
+      fetchAvailableCourses();
     }
   }, [profile]);
 
@@ -138,6 +151,38 @@ export const StudentDashboard: React.FC = () => {
       setEnrolledCourses(data || []);
     } catch (error: any) {
       console.error('Error fetching enrolled courses:', error);
+    }
+  };
+
+  const fetchAvailableCourses = async () => {
+    if (!profile) return;
+
+    try {
+      // Get enrolled course IDs
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select('course_id')
+        .eq('student_id', profile.id);
+      
+      const enrolledCourseIds = enrollments?.map(e => e.course_id) || [];
+
+      // Fetch available courses (published and not enrolled)
+      let query = supabase
+        .from('courses')
+        .select('id, title, description, thumbnail_url, price, created_at')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+
+      if (enrolledCourseIds.length > 0) {
+        query = query.not('id', 'in', `(${enrolledCourseIds.join(',')})`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setAvailableCourses(data || []);
+    } catch (error: any) {
+      console.error('Error fetching available courses:', error);
     }
   };
 
@@ -285,12 +330,6 @@ export const StudentDashboard: React.FC = () => {
                     </div>
                     My Courses
                   </CardTitle>
-                  <Link to="/courses">
-                    <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700">
-                      Browse More
-                      <ArrowUpRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </Link>
                 </div>
               </CardHeader>
               <CardContent>
@@ -299,11 +338,6 @@ export const StudentDashboard: React.FC = () => {
                     <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Start Your Learning Journey</h3>
                     <p className="text-gray-500 mb-6">You haven't enrolled in any courses yet. Discover amazing courses to boost your skills!</p>
-                    <Link to="/courses">
-                      <Button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
-                        Browse Courses
-                      </Button>
-                    </Link>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -329,7 +363,7 @@ export const StudentDashboard: React.FC = () => {
                             </div>
                           </div>
                           <div className="ml-6 flex flex-col gap-3">
-                            <Link to={`/course/${enrollment.courses.id}`}>
+                            <Link to={`/student/courses/${enrollment.courses.id}`}>
                               <Button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
                                 {enrollment.progress === 0 ? (
                                   <>
@@ -352,6 +386,61 @@ export const StudentDashboard: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Available Courses */}
+            {availableCourses.length > 0 && (
+              <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 mt-8">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg">
+                      <ShoppingCart className="h-6 w-6 text-white" />
+                    </div>
+                    Available Courses
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {availableCourses.slice(0, 4).map((course) => (
+                      <div key={course.id} className="border rounded-xl p-6 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-white to-gray-50">
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-900 mb-2">{course.title}</h3>
+                            <p className="text-gray-600 text-sm line-clamp-3 mb-3">
+                              {course.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-2xl font-bold text-emerald-600">₹{course.price}</span>
+                              <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                New Course
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Link to={`/payment/${course.id}`} className="flex-1">
+                              <Button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
+                                <ShoppingCart className="h-4 w-4 mr-2" />
+                                Enroll Now
+                              </Button>
+                            </Link>
+                            <Button variant="outline" size="sm" className="px-3">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {availableCourses.length > 4 && (
+                    <div className="text-center mt-6">
+                      <Button variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                        View All Available Courses
+                        <ArrowUpRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Quick Actions & Tips */}
@@ -366,13 +455,6 @@ export const StudentDashboard: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Link to="/courses">
-                  <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    Browse All Courses
-                  </Button>
-                </Link>
-                
                 <Link to="/student/progress">
                   <Button variant="outline" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
                     <TrendingUp className="h-4 w-4 mr-2" />

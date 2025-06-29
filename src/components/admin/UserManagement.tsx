@@ -208,12 +208,12 @@ export const UserManagement: React.FC = () => {
         options: {
           data: {
             full_name: studentForm.full_name,
-            role: 'student', // EXPLICITLY SET STUDENT ROLE
+            role: 'student',
             phone: studentForm.phone,
             address: studentForm.address,
             profession: studentForm.profession
           },
-          emailRedirectTo: undefined // Disable email confirmation
+          emailRedirectTo: undefined
         }
       });
 
@@ -226,17 +226,20 @@ export const UserManagement: React.FC = () => {
       // Wait for the database trigger to create the profile
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Verify the profile was created with correct role
-      const { data: profileData, error: profileError } = await supabase
+      // Update the profile with correct role to ensure it's set as student
+      const { error: updateError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
+        .update({ 
+          role: 'student',
+          full_name: studentForm.full_name,
+          phone: studentForm.phone,
+          address: studentForm.address,
+          profession: studentForm.profession
+        })
+        .eq('id', authData.user.id);
 
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-      } else {
-        console.log('Created profile with role:', profileData.role);
+      if (updateError) {
+        console.error('Profile update error:', updateError);
       }
 
       // Store credentials and user data for display
@@ -311,11 +314,11 @@ export const UserManagement: React.FC = () => {
         options: {
           data: {
             full_name: staffForm.full_name,
-            role: 'staff', // EXPLICITLY SET STAFF ROLE
+            role: 'staff',
             phone: staffForm.phone,
             profession: staffForm.profession
           },
-          emailRedirectTo: undefined // Disable email confirmation
+          emailRedirectTo: undefined
         }
       });
 
@@ -328,17 +331,19 @@ export const UserManagement: React.FC = () => {
       // Wait for the database trigger to create the profile
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Verify the profile was created with correct role
-      const { data: profileData, error: profileError } = await supabase
+      // Update the profile with correct role to ensure it's set as staff
+      const { error: updateError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
+        .update({ 
+          role: 'staff',
+          full_name: staffForm.full_name,
+          phone: staffForm.phone,
+          profession: staffForm.profession
+        })
+        .eq('id', authData.user.id);
 
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-      } else {
-        console.log('Created profile with role:', profileData.role);
+      if (updateError) {
+        console.error('Profile update error:', updateError);
       }
 
       // Store credentials and user data for display
