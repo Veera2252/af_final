@@ -74,6 +74,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchProfile = async (userId: string) => {
     try {
       console.log('Fetching profile for user:', userId);
+      
+      // Test Supabase connection first
+      const { data: connectionTest, error: connectionError } = await supabase
+        .from('profiles')
+        .select('count')
+        .limit(1);
+      
+      if (connectionError) {
+        console.error('Supabase connection test failed:', connectionError);
+        throw new Error(`Connection failed: ${connectionError.message}`);
+      }
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -82,18 +94,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching profile:', error);
-        throw error;
-      }
-      
-      console.log('Profile fetched:', data);
-      setProfile(data);
-      
-      // Navigate to appropriate dashboard based on role
-      if (data && data.role) {
-        navigateToRoleDashboard(data.role);
+        if (error.code === 'PGRST116') {
+          // Profile doesn't exist, create one
+          console.log('Profile not found, creating default profile');
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: userId,
+                role: 'student',
+                full_name: user?.user_metadata?.full_name || 'Unknown User',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            ])
+            .select()
+            .single();
+          
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            throw createError;
+          }
+          
+          setProfile(newProfile);
+          if (newProfile && newProfile.role) {
+            navigateToRoleDashboard(newProfile.role);
+          }
+        } else {
+          throw error;
+        }
+      } else {
+        console.log('Profile fetched:', data);
+        setProfile(data);
+        
+        // Navigate to appropriate dashboard based on role
+        if (data && data.role) {
+          navigateToRoleDashboard(data.role);
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      
+      // Provide more detailed error information
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.error('Network error: Unable to connect to Supabase. Please check:');
+        console.error('1. Your internet connection');
+        console.error('2. Supabase project status');
+        console.error('3. CORS configuration in Supabase dashboard');
+        console.error('4. Firewall or proxy settings');
+      }
     } finally {
       setLoading(false);
     }
