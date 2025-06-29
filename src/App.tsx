@@ -7,7 +7,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Navbar } from "@/components/layout/Navbar";
 import { NewHomePage } from "@/pages/NewHomePage";
-import { AdminDashboard, AdminLayout } from "@/pages/AdminDashboard";
+import { AdminDashboard, AdminLayout, AdminSettings } from "@/pages/AdminDashboard";
 import { StaffDashboard } from "@/pages/StaffDashboard";
 import { StudentDashboard } from "@/pages/StudentDashboard";
 import { UserManagement } from "@/components/admin/UserManagement";
@@ -54,6 +54,7 @@ const AppContent = () => {
         <Route path="/admin/courses/:courseId/quizzes" element={<AdminLayout><QuizManager /></AdminLayout>} />
         <Route path="/admin/courses/:courseId/assignments" element={<AdminLayout><AssignmentManager /></AdminLayout>} />
         <Route path="/admin/payments" element={<AdminLayout><PaymentHistoryPage /></AdminLayout>} />
+        <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
         
         {/* Staff Routes */}
         <Route path="/staff/dashboard" element={<StaffDashboard />} />
