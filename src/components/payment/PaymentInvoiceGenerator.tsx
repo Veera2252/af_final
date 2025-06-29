@@ -1,6 +1,8 @@
 import React from 'react';
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { FileDown } from 'lucide-react';
 
 interface StudentData {
   full_name: string;
@@ -248,5 +250,13 @@ export const PaymentInvoiceGenerator: React.FC<PaymentInvoiceGeneratorProps> = (
     }
   };
 
-  return { generatePaymentInvoicePDF };
+  return (
+    <Button 
+      onClick={generatePaymentInvoicePDF}
+      className="flex items-center space-x-2"
+    >
+      <FileDown className="h-4 w-4" />
+      <span>Generate Invoice</span>
+    </Button>
+  );
 };

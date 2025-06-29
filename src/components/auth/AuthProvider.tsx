@@ -99,15 +99,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('Profile not found, creating default profile');
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
-            .insert([
-              {
-                id: userId,
-                role: 'student',
-                full_name: user?.user_metadata?.full_name || 'Unknown User',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              }
-            ])
+            .insert({
+              id: userId,
+              email: user?.email || '',
+              role: 'student',
+              full_name: user?.user_metadata?.full_name || 'Unknown User',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
             .select()
             .single();
           

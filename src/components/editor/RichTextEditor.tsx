@@ -54,7 +54,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         },
       }),
       Color.configure({ types: [TextStyle.name, ListItem.name] }),
-      TextStyle.configure({ types: [ListItem.name] }),
+      TextStyle.configure({ HTMLAttributes: { class: 'text-style' } }),
     ],
     content,
     onUpdate: ({ editor }) => {
