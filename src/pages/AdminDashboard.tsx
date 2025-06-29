@@ -38,7 +38,8 @@ import {
   Mail,
   Phone,
   MapPin,
-  Building
+  Building,
+  MessageCircle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -89,6 +90,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { icon: Users, label: 'User Management', path: '/admin/users' },
     { icon: BookOpen, label: 'Course Management', path: '/admin/courses' },
     { icon: CreditCard, label: 'Payment Management', path: '/admin/payments' },
+    { icon: MessageCircle, label: 'Course Inquiries', path: '/admin/inquiries' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 
@@ -666,7 +668,7 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="p-6 space-y-8">
+      <div className="p-6 max-w-7xl mx-auto space-y-8">
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
@@ -723,7 +725,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Quick Actions - Moved above charts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center justify-between">
@@ -773,18 +775,18 @@ export const AdminDashboard: React.FC = () => {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-3 rounded-lg">
-                    <DollarSign className="h-6 w-6 text-white" />
+                    <MessageCircle className="h-6 w-6 text-white" />
                   </div>
-                  <span className="text-gray-900">Payment Management</span>
+                  <span className="text-gray-900">Course Inquiries</span>
                 </div>
                 <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-amber-600 transition-colors" />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 mb-4">View and manage all payments, transactions, and revenue.</p>
-              <Link to="/admin/payments">
+              <p className="text-gray-600 mb-4">View and manage all course inquiries from the chatbot.</p>
+              <Link to="/admin/inquiries">
                 <Button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
-                  View Payments
+                  View Inquiries
                 </Button>
               </Link>
             </CardContent>
