@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -5,6 +6,7 @@ import { InstagramCard } from '@/components/home/InstagramCard';
 import { CourseCarousel } from '@/components/home/CourseCarousel';
 import { TestimonialCard } from '@/components/home/TestimonialCard';
 import { ContactForm } from '@/components/home/ContactForm';
+import { CourseChatbot } from '@/components/home/CourseChatbot';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -588,6 +590,9 @@ export const NewHomePage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Course Chatbot */}
+      <CourseChatbot />
     </div>
   );
 };

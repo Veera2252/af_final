@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +12,7 @@ import { AdminDashboard, AdminLayout, AdminSettings } from "@/pages/AdminDashboa
 import { StaffDashboard } from "@/pages/StaffDashboard";
 import { StudentDashboard } from "@/pages/StudentDashboard";
 import { UserManagement } from "@/components/admin/UserManagement";
+import { InquiryManagement } from "@/components/admin/InquiryManagement";
 import { CourseList } from "@/components/courses/CourseList";
 import { CourseEditor } from "@/components/courses/CourseEditor";
 import { CourseViewer } from "@/components/courses/CourseViewer";
@@ -49,6 +51,7 @@ const AppContent = () => {
         {/* Admin Routes - All wrapped in AdminLayout */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
+        <Route path="/admin/inquiries" element={<AdminLayout><InquiryManagement /></AdminLayout>} />
         <Route path="/admin/courses" element={<AdminLayout><CourseList /></AdminLayout>} />
         <Route path="/admin/courses/:courseId" element={<AdminLayout><CourseEditor /></AdminLayout>} />
         <Route path="/admin/courses/:courseId/quizzes" element={<AdminLayout><QuizManager /></AdminLayout>} />
@@ -58,6 +61,7 @@ const AppContent = () => {
         
         {/* Staff Routes */}
         <Route path="/staff/dashboard" element={<StaffDashboard />} />
+        <Route path="/staff/inquiries" element={<InquiryManagement />} />
         
         {/* Student Routes */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
