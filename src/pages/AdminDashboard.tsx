@@ -79,9 +79,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      // Implement search functionality
       console.log('Searching for:', searchTerm);
-      // You can add actual search logic here
     }
   };
 
@@ -724,7 +722,52 @@ export const AdminDashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* Quick Actions - Moved above charts */}
+        {/* Secondary Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Avg. Completion Rate</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.completionRate}%</p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-full">
+                  <Target className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Draft Courses</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalCourses - stats.publishedCourses}</p>
+                </div>
+                <div className="bg-amber-100 p-3 rounded-full">
+                  <Calendar className="h-6 w-6 text-amber-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Recent Enrollments</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalEnrollments}</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <TrendingUp className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Fixed Quick Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
             <CardHeader className="pb-4">

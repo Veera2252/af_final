@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { InquiryManagement } from '@/components/admin/InquiryManagement';
+import { CourseEditor } from '@/components/courses/CourseEditor';
 import { 
   BookOpen, 
   Users, 
@@ -19,7 +20,8 @@ import {
   CheckCircle,
   Target,
   BarChart3,
-  MessageCircle
+  MessageCircle,
+  Edit
 } from 'lucide-react';
 
 export const StaffDashboard: React.FC = () => {
@@ -35,6 +37,8 @@ export const StaffDashboard: React.FC = () => {
   });
   const [recentCourses, setRecentCourses] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showCourseEditor, setShowCourseEditor] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -138,12 +142,48 @@ export const StaffDashboard: React.FC = () => {
     }
   };
 
+  const handleCreateCourse = () => {
+    setSelectedCourseId(null);
+    setShowCourseEditor(true);
+  };
+
+  const handleEditCourse = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    setShowCourseEditor(true);
+  };
+
+  const handleCourseEditorClose = () => {
+    setShowCourseEditor(false);
+    setSelectedCourseId(null);
+    fetchStaffStats();
+    fetchRecentCourses();
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto"></div>
           <p className="text-gray-600 font-medium">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (showCourseEditor) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
+        <div className="container mx-auto py-6">
+          <div className="flex items-center justify-between mb-6">
+            <Button 
+              variant="outline" 
+              onClick={handleCourseEditorClose}
+              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+          <CourseEditor courseId={selectedCourseId || 'new'} onSave={handleCourseEditorClose} />
         </div>
       </div>
     );
@@ -301,23 +341,17 @@ export const StaffDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Link to="/admin/courses/new">
-                      <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create New Course
-                      </Button>
-                    </Link>
-                    
-                    <Link to="/admin/courses">
-                      <Button variant="outline" className="w-full border-purple-200 text-purple-700 hover:bg-purple-50">
-                        <BookOpen className="h-4 w-4 mr-2" />
-                        Manage My Courses
-                      </Button>
-                    </Link>
+                    <Button 
+                      onClick={handleCreateCourse}
+                      className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Course
+                    </Button>
                     
                     <Button 
                       variant="outline" 
-                      className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+                      className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
                       onClick={() => setActiveTab('inquiries')}
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
@@ -338,16 +372,12 @@ export const StaffDashboard: React.FC = () => {
                   <CardContent className="space-y-4">
                     <p className="text-gray-600 mb-4">Create and manage assessments for your courses.</p>
                     <div className="grid grid-cols-2 gap-3">
-                      <Link to="/staff/quizzes">
-                        <Button variant="outline" size="sm" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                          Manage Quizzes
-                        </Button>
-                      </Link>
-                      <Link to="/staff/assignments">
-                        <Button variant="outline" size="sm" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                          Manage Assignments
-                        </Button>
-                      </Link>
+                      <Button variant="outline" size="sm" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                        Manage Quizzes
+                      </Button>
+                      <Button variant="outline" size="sm" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                        Manage Assignments
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -363,12 +393,6 @@ export const StaffDashboard: React.FC = () => {
                       </div>
                       Recent Courses
                     </div>
-                    <Link to="/admin/courses">
-                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
-                        View All
-                        <ArrowUpRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </Link>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -376,11 +400,12 @@ export const StaffDashboard: React.FC = () => {
                     <div className="text-center py-8">
                       <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500 mb-4">No courses created yet.</p>
-                      <Link to="/admin/courses/new">
-                        <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
-                          Create Your First Course
-                        </Button>
-                      </Link>
+                      <Button 
+                        onClick={handleCreateCourse}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700"
+                      >
+                        Create Your First Course
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -399,11 +424,15 @@ export const StaffDashboard: React.FC = () => {
                               <span className="text-sm text-gray-600">₹{course.price}</span>
                             </div>
                           </div>
-                          <Link to={`/admin/courses/${course.id}`}>
-                            <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
-                              Edit
-                            </Button>
-                          </Link>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                            onClick={() => handleEditCourse(course.id)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
                         </div>
                       ))}
                     </div>

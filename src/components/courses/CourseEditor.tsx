@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,8 +32,17 @@ import { Switch } from '@/components/ui/switch';
 
 type Course = Tables<'courses'>;
 
-export const CourseEditor: React.FC = () => {
-  const { courseId } = useParams();
+interface CourseEditorProps {
+  courseId?: string;
+  onSave?: () => void;
+}
+
+export const CourseEditor: React.FC<CourseEditorProps> = ({ 
+  courseId: propCourseId, 
+  onSave 
+}) => {
+  const { courseId: paramCourseId } = useParams();
+  const courseId = propCourseId || paramCourseId;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile } = useAuth();
@@ -106,7 +116,15 @@ export const CourseEditor: React.FC = () => {
           description: "Course created successfully!",
         });
         
-        navigate(`/admin/courses/${data.id}`);
+        if (onSave) {
+          onSave();
+        } else {
+          // Determine redirect based on user role
+          const redirectPath = profile.role === 'admin' 
+            ? `/admin/courses/${data.id}` 
+            : `/staff/courses/${data.id}`;
+          navigate(redirectPath);
+        }
       } else {
         const { error } = await supabase
           .from('courses')
@@ -126,7 +144,11 @@ export const CourseEditor: React.FC = () => {
           description: "Course updated successfully!",
         });
         
-        fetchCourse();
+        if (onSave) {
+          onSave();
+        } else {
+          fetchCourse();
+        }
       }
     } catch (error: any) {
       toast({
@@ -139,11 +161,19 @@ export const CourseEditor: React.FC = () => {
     }
   };
 
+  const handleBackNavigation = () => {
+    if (onSave) {
+      onSave();
+    } else {
+      // Determine navigation based on user role
+      const backPath = profile?.role === 'admin' ? '/admin/courses' : '/staff/dashboard';
+      navigate(backPath);
+    }
+  };
+
   const handleThumbnailUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // In a real implementation, you would upload to a storage service
-      // For now, we'll use a placeholder URL
       const url = URL.createObjectURL(file);
       setCourseData({ ...courseData, thumbnail_url: url });
       toast({
@@ -161,11 +191,11 @@ export const CourseEditor: React.FC = () => {
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
-              onClick={() => navigate('/admin/courses')}
+              onClick={handleBackNavigation}
               className="hover:bg-white/50 text-gray-900"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Courses
+              Back
             </Button>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
