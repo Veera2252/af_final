@@ -162,7 +162,7 @@ export const CourseEditor: React.FC = () => {
             <Button 
               variant="ghost" 
               onClick={() => navigate('/admin/courses')}
-              className="hover:bg-white/50"
+              className="hover:bg-white/50 text-gray-900"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Courses
@@ -186,7 +186,7 @@ export const CourseEditor: React.FC = () => {
                       </>
                     )}
                   </Badge>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-600">
                     Created {new Date(course.created_at!).toLocaleDateString()}
                   </span>
                 </div>
@@ -240,7 +240,7 @@ export const CourseEditor: React.FC = () => {
           <TabsContent value="details">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-gray-900">
                   <BookOpen className="h-5 w-5" />
                   Course Information
                 </CardTitle>
@@ -249,18 +249,18 @@ export const CourseEditor: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="title" className="text-sm font-medium">Course Title *</Label>
+                      <Label htmlFor="title" className="text-sm font-medium text-gray-900">Course Title *</Label>
                       <Input
                         id="title"
                         value={courseData.title}
                         onChange={(e) => setCourseData({ ...courseData, title: e.target.value })}
                         placeholder="Enter an engaging course title"
-                        className="mt-1"
+                        className="mt-1 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="price" className="text-sm font-medium">Price ($)</Label>
+                      <Label htmlFor="price" className="text-sm font-medium text-gray-900">Price ($)</Label>
                       <Input
                         id="price"
                         type="number"
@@ -268,19 +268,19 @@ export const CourseEditor: React.FC = () => {
                         value={courseData.price}
                         onChange={(e) => setCourseData({ ...courseData, price: parseFloat(e.target.value) || 0 })}
                         placeholder="0.00"
-                        className="mt-1"
+                        className="mt-1 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="thumbnail" className="text-sm font-medium">Course Thumbnail</Label>
+                      <Label htmlFor="thumbnail" className="text-sm font-medium text-gray-900">Course Thumbnail</Label>
                       <div className="mt-1 space-y-2">
                         <Input
                           id="thumbnail"
                           type="file"
                           accept="image/*"
                           onChange={handleThumbnailUpload}
-                          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 bg-white border-gray-300"
                         />
                         {courseData.thumbnail_url && (
                           <img 
@@ -294,7 +294,7 @@ export const CourseEditor: React.FC = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="description" className="text-sm font-medium">Course Description</Label>
+                    <Label htmlFor="description" className="text-sm font-medium text-gray-900">Course Description</Label>
                     <RichTextEditor
                       content={courseData.description}
                       onChange={(content) => setCourseData({ ...courseData, description: content })}
@@ -360,7 +360,7 @@ export const CourseEditor: React.FC = () => {
           <TabsContent value="settings">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-gray-900">
                   <Settings className="h-5 w-5" />
                   Course Settings
                 </CardTitle>

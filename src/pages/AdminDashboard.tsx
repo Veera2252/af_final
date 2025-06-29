@@ -117,7 +117,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden"
+              className="lg:hidden text-gray-900"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
@@ -186,7 +186,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden"
+                className="lg:hidden text-gray-900"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="h-5 w-5" />
@@ -313,7 +313,7 @@ const AdminSettings: React.FC = () => {
         {/* General Settings */}
         <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-gray-900">
               <Globe className="h-5 w-5 text-blue-600" />
               General Settings
             </CardTitle>
@@ -325,7 +325,7 @@ const AdminSettings: React.FC = () => {
                 id="siteName"
                 value={settings.siteName}
                 onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
               />
             </div>
             <div>
@@ -334,7 +334,7 @@ const AdminSettings: React.FC = () => {
                 id="siteDescription"
                 value={settings.siteDescription}
                 onChange={(e) => setSettings({ ...settings, siteDescription: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
                 rows={3}
               />
             </div>
@@ -344,7 +344,7 @@ const AdminSettings: React.FC = () => {
                 id="timezone"
                 value={settings.timezone}
                 onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
               />
             </div>
             <div>
@@ -353,7 +353,7 @@ const AdminSettings: React.FC = () => {
                 id="currency"
                 value={settings.currency}
                 onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
               />
             </div>
           </CardContent>
@@ -362,7 +362,7 @@ const AdminSettings: React.FC = () => {
         {/* Contact Information */}
         <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
           <CardHeader className="bg-gradient-to-r from-emerald-50 to-blue-50 border-b">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-gray-900">
               <Mail className="h-5 w-5 text-emerald-600" />
               Contact Information
             </CardTitle>
@@ -375,7 +375,7 @@ const AdminSettings: React.FC = () => {
                 type="email"
                 value={settings.contactEmail}
                 onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
               />
             </div>
             <div>
@@ -384,7 +384,7 @@ const AdminSettings: React.FC = () => {
                 id="contactPhone"
                 value={settings.contactPhone}
                 onChange={(e) => setSettings({ ...settings, contactPhone: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
               />
             </div>
             <div>
@@ -393,7 +393,7 @@ const AdminSettings: React.FC = () => {
                 id="address"
                 value={settings.address}
                 onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
                 rows={3}
               />
             </div>
@@ -403,7 +403,7 @@ const AdminSettings: React.FC = () => {
         {/* User Settings */}
         <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
           <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-gray-900">
               <Users className="h-5 w-5 text-purple-600" />
               User Settings
             </CardTitle>
@@ -435,7 +435,7 @@ const AdminSettings: React.FC = () => {
                 id="defaultUserRole"
                 value={settings.defaultUserRole}
                 onChange={(e) => setSettings({ ...settings, defaultUserRole: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
               />
             </div>
           </CardContent>
@@ -444,7 +444,7 @@ const AdminSettings: React.FC = () => {
         {/* System Settings */}
         <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
           <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-gray-900">
               <Shield className="h-5 w-5 text-amber-600" />
               System Settings
             </CardTitle>
@@ -477,7 +477,7 @@ const AdminSettings: React.FC = () => {
                 type="number"
                 value={settings.maxFileUploadSize}
                 onChange={(e) => setSettings({ ...settings, maxFileUploadSize: e.target.value })}
-                className="mt-1 text-gray-900"
+                className="mt-1 text-gray-900 bg-white border-gray-300 placeholder:text-gray-500"
               />
             </div>
           </CardContent>
