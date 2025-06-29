@@ -4,8 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Navbar } from "@/components/layout/Navbar";
-import { HomePage } from "@/pages/HomePage";
+import { NewHomePage } from "@/pages/NewHomePage";
 import { AdminDashboard } from "@/pages/AdminDashboard";
 import { StaffDashboard } from "@/pages/StaffDashboard";
 import { StudentDashboard } from "@/pages/StudentDashboard";
@@ -26,12 +27,13 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const location = useLocation();
   const isAdminDashboard = location.pathname === '/admin/dashboard';
+  const isHomePage = location.pathname === '/';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {!isAdminDashboard && <Navbar />}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {!isAdminDashboard && !isHomePage && <Navbar />}
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<NewHomePage />} />
         <Route path="/courses" element={<CourseList />} />
         <Route path="/course/:courseId" element={<CourseViewer />} />
         <Route path="/course/:courseId/preview" element={<CourseViewer />} />
@@ -65,15 +67,17 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider defaultTheme="system" storageKey="alphafly-ui-theme">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
