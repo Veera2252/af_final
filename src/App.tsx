@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/ui/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -14,7 +15,7 @@ import { ContentManager } from '@/components/admin/ContentManager';
 import { QuizManager } from '@/components/staff/QuizManager';
 import { AssignmentManager } from '@/components/staff/AssignmentManager';
 import { CourseViewer } from '@/components/student/CourseViewer';
-import { NotFound } from '@/pages/NotFound';
+import NotFound from '@/pages/NotFound';
 import { NewHomePage } from '@/pages/NewHomePage';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { PaymentPage } from '@/pages/PaymentPage';
