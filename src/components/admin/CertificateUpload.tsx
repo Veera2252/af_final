@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,31 +102,17 @@ export const CertificateUpload: React.FC = () => {
 
       if (uploadError) throw uploadError;
 
-      // Save certificate record to database using direct insert query
-      const { error: dbError } = await supabase.rpc('insert_student_certificate', {
-        p_student_id: selectedStudent,
-        p_course_id: selectedCourse,
-        p_file_url: fileName
-      });
-
-      if (dbError) {
-        // Fallback to raw SQL if RPC doesn't exist
-        console.log('RPC failed, trying alternative approach...');
-        
-        // Since we can't use the table directly, let's create a simple workaround
-        // This will be resolved once the database types are updated
-        const insertQuery = `
-          INSERT INTO student_certificates (student_id, course_id, file_url, issued_at)
-          VALUES ('${selectedStudent}', '${selectedCourse}', '${fileName}', now())
-        `;
-        
-        // For now, we'll assume the insert worked since we can upload the file
-        console.log('Certificate record should be created:', {
+      // Save certificate record to database using direct insert
+      const { error: dbError } = await supabase
+        .from('student_certificates')
+        .insert({
           student_id: selectedStudent,
           course_id: selectedCourse,
-          file_url: fileName
+          file_url: fileName,
+          issued_at: new Date().toISOString()
         });
-      }
+
+      if (dbError) throw dbError;
 
       toast({
         title: "Success",
