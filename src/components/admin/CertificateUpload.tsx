@@ -103,9 +103,9 @@ export const CertificateUpload: React.FC = () => {
 
       if (uploadError) throw uploadError;
 
-      // Save certificate record to database
+      // Save certificate record to database using raw insert
       const { error: dbError } = await supabase
-        .from('student_certificates')
+        .from('student_certificates' as any)
         .insert({
           student_id: selectedStudent,
           course_id: selectedCourse,

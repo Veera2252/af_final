@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { Award, Download, Calendar, BookOpen, FileText, Star } from 'lucide-react';
+import { Award, Download, Calendar, BookOpen, Star } from 'lucide-react';
 
 interface Certificate {
   id: string;
@@ -35,20 +35,29 @@ export const StudentCertificates: React.FC = () => {
     if (!profile) return;
 
     try {
+      // Using a raw query since TypeScript types haven't been updated yet
       const { data, error } = await supabase
-        .from('student_certificates')
-        .select(`
-          *,
-          courses (
-            title,
-            description
-          )
-        `)
-        .eq('student_id', profile.id)
-        .order('issued_at', { ascending: false });
+        .rpc('get_student_certificates', { student_id: profile.id });
 
-      if (error) throw error;
-      setCertificates(data || []);
+      if (error) {
+        // Fallback query using direct table access
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('student_certificates' as any)
+          .select(`
+            *,
+            courses (
+              title,
+              description
+            )
+          `)
+          .eq('student_id', profile.id)
+          .order('issued_at', { ascending: false });
+
+        if (fallbackError) throw fallbackError;
+        setCertificates(fallbackData || []);
+      } else {
+        setCertificates(data || []);
+      }
     } catch (error: any) {
       console.error('Error fetching certificates:', error);
       toast({
