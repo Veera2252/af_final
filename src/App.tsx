@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from "@/components/ui/theme-provider"
@@ -18,12 +17,13 @@ import { QuizManager } from '@/components/staff/QuizManager';
 import { AssignmentManager } from '@/components/staff/AssignmentManager';
 import { CourseViewer } from '@/components/student/CourseViewer';
 import NotFound from '@/pages/NotFound';
-import { NewHomePage } from '@/pages/NewHomePage';
+import HomePage from '@/pages/HomePage';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { PaymentPage } from '@/pages/PaymentPage';
 import { PaymentSuccessPage } from '@/pages/PaymentSuccessPage';
 import { PaymentHistoryPage } from '@/pages/PaymentHistoryPage';
 import { InquiryManagement } from '@/components/admin/InquiryManagement';
+import AdminPayments from '@/components/admin/AdminPayments';
 
 function App() {
   return (
@@ -34,8 +34,8 @@ function App() {
             <Toaster />
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<NewHomePage />} />
-              <Route path="/home" element={<NewHomePage />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/home" element={<HomePage />} />
               <Route path="/login" element={<LoginForm />} />
               <Route path="/payment/:courseId" element={<PaymentPage />} />
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
@@ -50,7 +50,7 @@ function App() {
                 <Route path="courses/:id" element={<AdminLayout><CourseEditor /></AdminLayout>} />
                 <Route path="courses/:courseId/content" element={<AdminLayout><ContentManager /></AdminLayout>} />
                 <Route path="certificates" element={<AdminLayout><CertificateUpload /></AdminLayout>} />
-                <Route path="payments" element={<AdminLayout><div className="p-8"><h1>Payment Management</h1></div></AdminLayout>} />
+                <Route path="payments" element={<AdminLayout><AdminPayments /></AdminLayout>} />
                 <Route path="inquiries" element={<AdminLayout><InquiryManagement /></AdminLayout>} />
                 <Route path="settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
               </Route>
@@ -87,3 +87,4 @@ function App() {
 }
 
 export default App;
+
