@@ -65,6 +65,7 @@ function App() {
                 <Route path="students" element={<AdminLayout><div className="p-8"><h1>Student Management</h1></div></AdminLayout>} />
                 <Route path="quizzes" element={<AdminLayout><QuizManager /></AdminLayout>} />
                 <Route path="assignments" element={<AdminLayout><AssignmentManager /></AdminLayout>} />
+                <Route path="certificates" element={<AdminLayout><CertificateUpload /></AdminLayout>} />
               </Route>
               
               {/* Student Routes */}
