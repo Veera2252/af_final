@@ -35,29 +35,18 @@ export const StudentCertificates: React.FC = () => {
     if (!profile) return;
 
     try {
-      // Using a raw query since TypeScript types haven't been updated yet
-      const { data, error } = await supabase
-        .rpc('get_student_certificates', { student_id: profile.id });
+      // Use the edge function to fetch certificates
+      const { data, error } = await supabase.functions.invoke('get-student-certificates', {
+        body: { student_id: profile.id }
+      });
 
       if (error) {
-        // Fallback query using direct table access
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('student_certificates' as any)
-          .select(`
-            *,
-            courses (
-              title,
-              description
-            )
-          `)
-          .eq('student_id', profile.id)
-          .order('issued_at', { ascending: false });
-
-        if (fallbackError) throw fallbackError;
-        setCertificates(fallbackData || []);
-      } else {
-        setCertificates(data || []);
+        console.error('Error from edge function:', error);
+        throw error;
       }
+
+      console.log('Certificates data:', data);
+      setCertificates(data || []);
     } catch (error: any) {
       console.error('Error fetching certificates:', error);
       toast({
