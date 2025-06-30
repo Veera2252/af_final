@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,10 +24,13 @@ import {
   Settings,
   ArrowLeft,
   Globe,
-  Lock
+  Lock,
+  DollarSign,
+  Gift
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 type Course = Tables<'courses'>;
 
@@ -53,7 +55,8 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
     description: '',
     price: 0,
     thumbnail_url: '',
-    is_published: false
+    is_published: false,
+    is_free: false
   });
 
   useEffect(() => {
@@ -77,9 +80,10 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
       setCourseData({
         title: data.title,
         description: data.description || '',
-        price: data.price,
+        price: Number(data.price),
         thumbnail_url: data.thumbnail_url || '',
-        is_published: data.is_published || false
+        is_published: data.is_published || false,
+        is_free: data.is_free || false
       });
     } catch (error: any) {
       toast({
@@ -101,10 +105,11 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
           .insert([{
             title: courseData.title,
             description: courseData.description,
-            price: courseData.price,
+            price: courseData.is_free ? 0 : courseData.price,
             thumbnail_url: courseData.thumbnail_url,
             created_by: profile.id,
-            is_published: courseData.is_published
+            is_published: courseData.is_published,
+            is_free: courseData.is_free
           }])
           .select()
           .single();
@@ -119,7 +124,6 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
         if (onSave) {
           onSave();
         } else {
-          // Determine redirect based on user role
           const redirectPath = profile.role === 'admin' 
             ? `/admin/courses/${data.id}` 
             : `/staff/courses/${data.id}`;
@@ -131,9 +135,10 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
           .update({
             title: courseData.title,
             description: courseData.description,
-            price: courseData.price,
+            price: courseData.is_free ? 0 : courseData.price,
             thumbnail_url: courseData.thumbnail_url,
-            is_published: courseData.is_published
+            is_published: courseData.is_published,
+            is_free: courseData.is_free
           })
           .eq('id', courseId);
 
@@ -165,7 +170,6 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
     if (onSave) {
       onSave();
     } else {
-      // Determine navigation based on user role
       const backPath = profile?.role === 'admin' ? '/admin/courses' : '/staff/dashboard';
       navigate(backPath);
     }
@@ -213,6 +217,19 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
                       <>
                         <Lock className="h-3 w-3 mr-1" />
                         Draft
+                      </>
+                    )}
+                  </Badge>
+                  <Badge variant={course.is_free ? "outline" : "default"}>
+                    {course.is_free ? (
+                      <>
+                        <Gift className="h-3 w-3 mr-1" />
+                        Free
+                      </>
+                    ) : (
+                      <>
+                        <DollarSign className="h-3 w-3 mr-1" />
+                        Paid
                       </>
                     )}
                   </Badge>
@@ -289,18 +306,46 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
                       />
                     </div>
                     
-                    <div>
-                      <Label htmlFor="price" className="text-sm font-medium text-gray-900">Price ($)</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        step="0.01"
-                        value={courseData.price}
-                        onChange={(e) => setCourseData({ ...courseData, price: parseFloat(e.target.value) || 0 })}
-                        placeholder="0.00"
-                        className="mt-1 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
-                      />
+                    {/* Course Type Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-900">Course Type *</Label>
+                      <RadioGroup 
+                        value={courseData.is_free ? "free" : "paid"} 
+                        onValueChange={(value) => setCourseData({ ...courseData, is_free: value === "free" })}
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="free" id="free" />
+                          <Label htmlFor="free" className="flex items-center gap-2 cursor-pointer">
+                            <Gift className="h-4 w-4 text-green-600" />
+                            Free Course
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="paid" id="paid" />
+                          <Label htmlFor="paid" className="flex items-center gap-2 cursor-pointer">
+                            <DollarSign className="h-4 w-4 text-blue-600" />
+                            Paid Course
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
+
+                    {/* Price field - only show for paid courses */}
+                    {!courseData.is_free && (
+                      <div>
+                        <Label htmlFor="price" className="text-sm font-medium text-gray-900">Price ($) *</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          step="0.01"
+                          value={courseData.price}
+                          onChange={(e) => setCourseData({ ...courseData, price: parseFloat(e.target.value) || 0 })}
+                          placeholder="0.00"
+                          className="mt-1 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <Label htmlFor="thumbnail" className="text-sm font-medium text-gray-900">Course Thumbnail</Label>
@@ -333,11 +378,35 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
                     />
                   </div>
                 </div>
+
+                {/* Course Access Info */}
+                <div className={`p-4 rounded-lg border-2 ${courseData.is_free ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${courseData.is_free ? 'bg-green-500' : 'bg-blue-500'}`}>
+                      {courseData.is_free ? (
+                        <Gift className="h-6 w-6 text-white" />
+                      ) : (
+                        <DollarSign className="h-6 w-6 text-white" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className={`font-bold text-lg mb-2 ${courseData.is_free ? 'text-green-800' : 'text-blue-800'}`}>
+                        {courseData.is_free ? 'Free Course Access' : 'Paid Course Access'}
+                      </h3>
+                      <p className={`${courseData.is_free ? 'text-green-700' : 'text-blue-700'}`}>
+                        {courseData.is_free 
+                          ? 'This course will be accessible to all students without payment'
+                          : `Students need to pay $${courseData.price} to access this course`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Course Content */}
+          {/* Content, Assignments, Quizzes tabs remain the same */}
           <TabsContent value="content">
             {courseId === 'new' ? (
               <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
@@ -356,7 +425,6 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
             )}
           </TabsContent>
 
-          {/* Assignments */}
           <TabsContent value="assignments">
             {courseId === 'new' ? (
               <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
@@ -371,7 +439,6 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
             )}
           </TabsContent>
 
-          {/* Quizzes */}
           <TabsContent value="quizzes">
             {courseId === 'new' ? (
               <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
@@ -386,7 +453,6 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
             )}
           </TabsContent>
 
-          {/* Settings */}
           <TabsContent value="settings">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
@@ -412,7 +478,7 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
                   <ul className="text-sm text-amber-700 space-y-1">
                     <li>• Ensure course has a clear title and description</li>
                     <li>• Add at least one section with content</li>
-                    <li>• Set appropriate pricing</li>
+                    <li>• Set appropriate pricing (or mark as free)</li>
                     <li>• Upload a course thumbnail</li>
                     <li>• Review all content for accuracy</li>
                   </ul>

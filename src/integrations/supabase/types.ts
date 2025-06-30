@@ -207,6 +207,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          is_free: boolean | null
           is_published: boolean | null
           price: number
           thumbnail_url: string | null
@@ -218,6 +219,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_free?: boolean | null
           is_published?: boolean | null
           price?: number
           thumbnail_url?: string | null
@@ -229,6 +231,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_free?: boolean | null
           is_published?: boolean | null
           price?: number
           thumbnail_url?: string | null
@@ -334,29 +337,41 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           created_at: string | null
           email: string
           full_name: string
           id: string
+          is_active: boolean | null
+          phone: string | null
+          profession: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email: string
           full_name: string
           id: string
+          is_active?: boolean | null
+          phone?: string | null
+          profession?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string
           full_name?: string
           id?: string
+          is_active?: boolean | null
+          phone?: string | null
+          profession?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
