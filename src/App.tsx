@@ -43,6 +43,7 @@ function App() {
               
               {/* Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']} />}>
+                <Route index element={<AdminDashboard />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="users" element={<AdminLayout><UserManagement /></AdminLayout>} />
                 <Route path="courses" element={<AdminLayout><CourseList /></AdminLayout>} />
@@ -87,4 +88,3 @@ function App() {
 }
 
 export default App;
-

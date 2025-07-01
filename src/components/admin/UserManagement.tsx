@@ -114,7 +114,8 @@ export const UserManagement: React.FC = () => {
     try {
       console.log('Creating user with data:', newUser);
       
-      const { data, error } = await supabase.auth.signUp({
+      // Create the user account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
         options: {
@@ -128,12 +129,47 @@ export const UserManagement: React.FC = () => {
         }
       });
 
-      if (error) {
-        console.error('Supabase auth error:', error);
-        throw error;
+      if (authError) {
+        console.error('Supabase auth error:', authError);
+        throw authError;
       }
 
-      console.log('User created successfully:', data);
+      console.log('User created successfully:', authData);
+
+      // Wait a moment for the trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Verify the profile was created
+      if (authData.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Profile creation verification failed:', profileError);
+          
+          // If profile doesn't exist, create it manually
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              email: newUser.email,
+              full_name: newUser.full_name,
+              role: newUser.role,
+              phone: newUser.phone,
+              address: newUser.address,
+              profession: newUser.profession,
+              is_active: true
+            });
+
+          if (insertError) {
+            console.error('Manual profile creation failed:', insertError);
+            throw insertError;
+          }
+        }
+      }
 
       toast({
         title: "Success",
