@@ -43,7 +43,7 @@ export function AdminSidebar() {
   const isActive = (path: string) => currentPath === path;
 
   return (
-    <Sidebar className={state === "collapsed" ? "w-14" : "w-64"} collapsible>
+    <Sidebar className={state === "collapsed" ? "w-14" : "w-64"} collapsible="icon">
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2">
           <User className="h-6 w-6 text-blue-600" />
