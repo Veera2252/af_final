@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,7 +27,8 @@ import {
   Upload,
   BookOpen,
   HelpCircle,
-  ClipboardList
+  ClipboardList,
+  Save
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -47,6 +47,8 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
   const [loading, setLoading] = useState(false);
   const [showAddSection, setShowAddSection] = useState(false);
   const [showAddContent, setShowAddContent] = useState<string | null>(null);
+  const [showCreateQuiz, setShowCreateQuiz] = useState(false);
+  const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [contentForm, setContentForm] = useState({
     title: '',
@@ -54,6 +56,18 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
     textContent: '',
     fileUrl: '',
     videoUrl: ''
+  });
+  const [quizForm, setQuizForm] = useState({
+    title: '',
+    description: '',
+    time_limit: 30,
+    max_attempts: 1
+  });
+  const [assignmentForm, setAssignmentForm] = useState({
+    title: '',
+    description: '',
+    due_date: '',
+    max_points: 100
   });
   const { toast } = useToast();
 
@@ -301,6 +315,92 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
     }
   };
 
+  const handleCreateQuiz = async () => {
+    if (!quizForm.title.trim()) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('quizzes')
+        .insert([{
+          course_id: courseId,
+          title: quizForm.title,
+          description: quizForm.description,
+          time_limit: quizForm.time_limit,
+          max_attempts: quizForm.max_attempts
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Quiz created successfully!",
+      });
+
+      setQuizForm({
+        title: '',
+        description: '',
+        time_limit: 30,
+        max_attempts: 1
+      });
+      setShowCreateQuiz(false);
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateAssignment = async () => {
+    if (!assignmentForm.title.trim()) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('assignments')
+        .insert([{
+          course_id: courseId,
+          title: assignmentForm.title,
+          description: assignmentForm.description,
+          due_date: assignmentForm.due_date || null,
+          max_points: assignmentForm.max_points
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Assignment created successfully!",
+      });
+
+      setAssignmentForm({
+        title: '',
+        description: '',
+        due_date: '',
+        max_points: 100
+      });
+      setShowCreateAssignment(false);
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -338,7 +438,134 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
                         Cancel
                       </Button>
                       <Button onClick={handleAddSection} disabled={loading}>
-                        Add Section
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Section
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={showCreateQuiz} onOpenChange={setShowCreateQuiz}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Create Quiz
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Quiz</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="quizTitle">Quiz Title</Label>
+                      <Input
+                        id="quizTitle"
+                        value={quizForm.title}
+                        onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })}
+                        placeholder="Enter quiz title"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="quizDescription">Description</Label>
+                      <Textarea
+                        id="quizDescription"
+                        value={quizForm.description}
+                        onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })}
+                        placeholder="Enter quiz description"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
+                        <Input
+                          id="timeLimit"
+                          type="number"
+                          value={quizForm.time_limit}
+                          onChange={(e) => setQuizForm({ ...quizForm, time_limit: parseInt(e.target.value) || 30 })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="maxAttempts">Max Attempts</Label>
+                        <Input
+                          id="maxAttempts"
+                          type="number"
+                          value={quizForm.max_attempts}
+                          onChange={(e) => setQuizForm({ ...quizForm, max_attempts: parseInt(e.target.value) || 1 })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setShowCreateQuiz(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleCreateQuiz} disabled={loading}>
+                        <Save className="h-4 w-4 mr-2" />
+                        Create Quiz
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={showCreateAssignment} onOpenChange={setShowCreateAssignment}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    Create Assignment
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Assignment</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="assignmentTitle">Assignment Title</Label>
+                      <Input
+                        id="assignmentTitle"
+                        value={assignmentForm.title}
+                        onChange={(e) => setAssignmentForm({ ...assignmentForm, title: e.target.value })}
+                        placeholder="Enter assignment title"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="assignmentDescription">Description</Label>
+                      <RichTextEditor
+                        content={assignmentForm.description}
+                        onChange={(content) => setAssignmentForm({ ...assignmentForm, description: content })}
+                        placeholder="Enter assignment description"
+                        className="mt-2"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="dueDate">Due Date</Label>
+                        <Input
+                          id="dueDate"
+                          type="datetime-local"
+                          value={assignmentForm.due_date}
+                          onChange={(e) => setAssignmentForm({ ...assignmentForm, due_date: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="maxPoints">Max Points</Label>
+                        <Input
+                          id="maxPoints"
+                          type="number"
+                          value={assignmentForm.max_points}
+                          onChange={(e) => setAssignmentForm({ ...assignmentForm, max_points: parseInt(e.target.value) || 100 })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setShowCreateAssignment(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleCreateAssignment} disabled={loading}>
+                        <Save className="h-4 w-4 mr-2" />
+                        Create Assignment
                       </Button>
                     </div>
                   </div>

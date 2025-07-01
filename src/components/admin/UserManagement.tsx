@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -114,19 +113,18 @@ export const UserManagement: React.FC = () => {
     try {
       console.log('Creating user with data:', newUser);
       
-      // Create the user account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Create the user account using admin API
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: newUser.email,
         password: newUser.password,
-        options: {
-          data: {
-            full_name: newUser.full_name,
-            role: newUser.role,
-            phone: newUser.phone,
-            address: newUser.address,
-            profession: newUser.profession,
-          }
-        }
+        user_metadata: {
+          full_name: newUser.full_name,
+          role: newUser.role,
+          phone: newUser.phone,
+          address: newUser.address,
+          profession: newUser.profession,
+        },
+        email_confirm: true
       });
 
       if (authError) {
@@ -136,38 +134,24 @@ export const UserManagement: React.FC = () => {
 
       console.log('User created successfully:', authData);
 
-      // Wait a moment for the trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Verify the profile was created
+      // Create profile manually since admin.createUser doesn't trigger the trigger
       if (authData.user) {
-        const { data: profileData, error: profileError } = await supabase
+        const { error: profileError } = await supabase
           .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single();
+          .insert({
+            id: authData.user.id,
+            email: newUser.email,
+            full_name: newUser.full_name,
+            role: newUser.role,
+            phone: newUser.phone,
+            address: newUser.address,
+            profession: newUser.profession,
+            is_active: true
+          });
 
         if (profileError) {
-          console.error('Profile creation verification failed:', profileError);
-          
-          // If profile doesn't exist, create it manually
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authData.user.id,
-              email: newUser.email,
-              full_name: newUser.full_name,
-              role: newUser.role,
-              phone: newUser.phone,
-              address: newUser.address,
-              profession: newUser.profession,
-              is_active: true
-            });
-
-          if (insertError) {
-            console.error('Manual profile creation failed:', insertError);
-            throw insertError;
-          }
+          console.error('Profile creation failed:', profileError);
+          throw profileError;
         }
       }
 
@@ -188,9 +172,7 @@ export const UserManagement: React.FC = () => {
       setIsCreateDialogOpen(false);
       
       // Refresh the users list
-      setTimeout(() => {
-        fetchUsers();
-      }, 1000);
+      fetchUsers();
 
     } catch (error: any) {
       console.error('Error creating user:', error);
