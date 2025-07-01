@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import { Users, BookOpen, GraduationCap, Settings, ChevronRight, Sparkles, Camer
 // import AdminDashboard from "@/components/pages/AdminDashboard";
 // import StaffDashboard from "@/components/pages/StaffDashboard";
 // import StudentDashboard from "@/components/dashboards/StudentDashboard";
-import TestimonialsSection from "@/components/TestimonialsSection";
+import TestimonialsSection from "@/components/home/TestimonialsSection";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +29,7 @@ interface Section {
 interface Content {
   id: string;
   title: string;
-  content_type: 'text' | 'video' | 'assignment';
+  content_type: 'text' | 'video' | 'pdf';
   content_data: any;
   order_index: number;
 }
@@ -41,7 +42,7 @@ export const ContentManager: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [newContentTitle, setNewContentTitle] = useState('');
-  const [newContentType, setNewContentType] = useState<'text' | 'video' | 'assignment'>('text');
+  const [newContentType, setNewContentType] = useState<'text' | 'video' | 'pdf'>('text');
   const [contentData, setContentData] = useState('');
 
   useEffect(() => {
@@ -120,19 +121,19 @@ export const ContentManager: React.FC = () => {
         content_data_obj = { html: contentData };
       } else if (newContentType === 'video') {
         content_data_obj = { url: contentData };
-      } else if (newContentType === 'assignment') {
-        content_data_obj = { description: contentData };
+      } else if (newContentType === 'pdf') {
+        content_data_obj = { url: contentData };
       }
 
       const { data, error } = await supabase
         .from('course_content')
-        .insert([{
+        .insert({
           title: newContentTitle,
           content_type: newContentType,
           content_data: content_data_obj,
           section_id: selectedSection.id,
           order_index: selectedSection.content?.length || 0
-        }])
+        })
         .select()
         .single();
 
@@ -276,7 +277,7 @@ export const ContentManager: React.FC = () => {
                       >
                         <option value="text">Text/Lesson</option>
                         <option value="video">Video</option>
-                        <option value="assignment">Assignment</option>
+                        <option value="pdf">PDF Document</option>
                       </select>
                     </div>
                   </div>
@@ -285,7 +286,7 @@ export const ContentManager: React.FC = () => {
                     <Label>
                       {newContentType === 'text' && 'Lesson Content'}
                       {newContentType === 'video' && 'Video URL'}
-                      {newContentType === 'assignment' && 'Assignment Description'}
+                      {newContentType === 'pdf' && 'PDF URL'}
                     </Label>
                     {newContentType === 'text' ? (
                       <RichTextEditor
@@ -298,7 +299,7 @@ export const ContentManager: React.FC = () => {
                         placeholder={
                           newContentType === 'video' 
                             ? 'Enter video URL' 
-                            : 'Enter assignment description'
+                            : 'Enter PDF URL'
                         }
                         value={contentData}
                         onChange={(e) => setContentData(e.target.value)}
@@ -324,7 +325,7 @@ export const ContentManager: React.FC = () => {
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                               {content.content_type === 'text' && <FileText className="h-4 w-4" />}
                               {content.content_type === 'video' && <Video className="h-4 w-4" />}
-                              {content.content_type === 'assignment' && <Edit3 className="h-4 w-4" />}
+                              {content.content_type === 'pdf' && <FileText className="h-4 w-4" />}
                               <span className="capitalize">{content.content_type}</span>
                             </div>
                           </div>

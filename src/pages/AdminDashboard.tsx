@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -76,6 +77,34 @@ export const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+};
+
+// Create AdminLayout component
+export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="container mx-auto py-8">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Create AdminSettings component
+export const AdminSettings: React.FC = () => {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Settings</h1>
+      </div>
+      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+        <CardContent className="p-6">
+          <h2 className="text-lg font-semibold mb-4">System Settings</h2>
+          <p className="text-gray-600">Configure your platform settings here.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
