@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +29,8 @@ import {
   BookOpen,
   HelpCircle,
   ClipboardList,
-  Save
+  Save,
+  ArrowLeft
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -41,6 +43,7 @@ interface ContentManagerProps {
 }
 
 export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
+  const navigate = useNavigate();
   const [sections, setSections] = useState<CourseSection[]>([]);
   const [contents, setContents] = useState<Record<string, CourseContent[]>>({});
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -401,16 +404,26 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
     }
   };
 
+  const handleBackToCourses = () => {
+    navigate('/admin/courses');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
         <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
           <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <FolderOpen className="h-5 w-5" />
-              Course Content & Structure
-            </CardTitle>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={handleBackToCourses}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Courses
+              </Button>
+              <CardTitle className="flex items-center gap-2">
+                <FolderOpen className="h-5 w-5" />
+                Course Content & Structure
+              </CardTitle>
+            </div>
             <div className="flex gap-2">
               <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
                 <DialogTrigger asChild>
@@ -729,8 +742,8 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
                                   Cancel
                                 </Button>
                                 <Button onClick={() => handleAddContent(section.id)} disabled={loading}>
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add Content
+                                  <Save className="h-4 w-4 mr-2" />
+                                  Save Content
                                 </Button>
                               </div>
                             </div>

@@ -113,18 +113,19 @@ export const UserManagement: React.FC = () => {
     try {
       console.log('Creating user with data:', newUser);
       
-      // Create the user account using admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Use the regular signup method which will trigger our database trigger
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
-        user_metadata: {
-          full_name: newUser.full_name,
-          role: newUser.role,
-          phone: newUser.phone,
-          address: newUser.address,
-          profession: newUser.profession,
-        },
-        email_confirm: true
+        options: {
+          data: {
+            full_name: newUser.full_name,
+            role: newUser.role,
+            phone: newUser.phone,
+            address: newUser.address,
+            profession: newUser.profession,
+          }
+        }
       });
 
       if (authError) {
@@ -134,30 +135,9 @@ export const UserManagement: React.FC = () => {
 
       console.log('User created successfully:', authData);
 
-      // Create profile manually since admin.createUser doesn't trigger the trigger
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            email: newUser.email,
-            full_name: newUser.full_name,
-            role: newUser.role,
-            phone: newUser.phone,
-            address: newUser.address,
-            profession: newUser.profession,
-            is_active: true
-          });
-
-        if (profileError) {
-          console.error('Profile creation failed:', profileError);
-          throw profileError;
-        }
-      }
-
       toast({
         title: "Success",
-        description: `${newUser.role} created successfully!`,
+        description: `${newUser.role} created successfully! They will need to verify their email.`,
       });
 
       setNewUser({
