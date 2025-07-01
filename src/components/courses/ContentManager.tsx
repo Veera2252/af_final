@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -6,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { ContentEditor } from './ContentEditor';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Plus, 
   Trash2, 
@@ -19,7 +24,11 @@ import {
   ChevronDown,
   ChevronRight,
   FolderOpen,
-  Folder
+  Folder,
+  Upload,
+  BookOpen,
+  HelpCircle,
+  ClipboardList
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -36,10 +45,22 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
   const [contents, setContents] = useState<Record<string, CourseContent[]>>({});
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [showAddSection, setShowAddSection] = useState(false);
+  const [showAddContent, setShowAddContent] = useState<string | null>(null);
+  const [newSectionTitle, setNewSectionTitle] = useState('');
+  const [contentForm, setContentForm] = useState({
+    title: '',
+    type: 'text' as 'text' | 'video' | 'pdf',
+    textContent: '',
+    fileUrl: '',
+    videoUrl: ''
+  });
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchSections();
+    if (courseId) {
+      fetchSections();
+    }
   }, [courseId]);
 
   const fetchSections = async () => {
@@ -87,8 +108,7 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
   };
 
   const handleAddSection = async () => {
-    const newSectionTitle = prompt('Enter section title:');
-    if (!newSectionTitle) return;
+    if (!newSectionTitle.trim()) return;
 
     setLoading(true);
     try {
@@ -107,10 +127,66 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
       setSections([...sections, data]);
       setContents({ ...contents, [data.id]: [] });
       setExpandedSections(prev => new Set([...prev, data.id]));
+      setNewSectionTitle('');
+      setShowAddSection(false);
       
       toast({
         title: "Success",
         description: "Section added successfully!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddContent = async (sectionId: string) => {
+    if (!contentForm.title.trim()) return;
+
+    setLoading(true);
+    try {
+      let content_data_obj = {};
+      
+      if (contentForm.type === 'text') {
+        content_data_obj = { html: contentForm.textContent };
+      } else if (contentForm.type === 'video') {
+        content_data_obj = { url: contentForm.videoUrl };
+      } else if (contentForm.type === 'pdf') {
+        content_data_obj = { url: contentForm.fileUrl };
+      }
+
+      const { data, error } = await supabase
+        .from('course_content')
+        .insert({
+          title: contentForm.title,
+          content_type: contentForm.type,
+          content_data: content_data_obj,
+          section_id: sectionId,
+          order_index: contents[sectionId]?.length || 0
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      await fetchSections();
+      setContentForm({
+        title: '',
+        type: 'text',
+        textContent: '',
+        fileUrl: '',
+        videoUrl: ''
+      });
+      setShowAddContent(null);
+      
+      toast({
+        title: "Success",
+        description: "Content added successfully!",
       });
     } catch (error: any) {
       toast({
@@ -183,8 +259,6 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
     switch (contentType) {
       case 'video':
         return <Video className="h-4 w-4 text-red-500" />;
-      case 'image':  
-        return <Image className="h-4 w-4 text-green-500" />;
       case 'pdf':
         return <File className="h-4 w-4 text-blue-500" />;
       case 'text':
@@ -197,7 +271,6 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
   const getContentTypeBadge = (contentType: string) => {
     const variants = {
       video: 'destructive',
-      image: 'default',
       pdf: 'secondary',
       text: 'outline'
     } as const;
@@ -215,6 +288,19 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
     setExpandedSections(newExpanded);
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // In a real implementation, you would upload to a storage service
+      const url = URL.createObjectURL(file);
+      setContentForm({ ...contentForm, fileUrl: url });
+      toast({
+        title: "File Selected",
+        description: `${file.name} selected (demo mode - implement file storage)`,
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -225,10 +311,40 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
               <FolderOpen className="h-5 w-5" />
               Course Content & Structure
             </CardTitle>
-            <Button onClick={handleAddSection} disabled={loading} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Section
-            </Button>
+            <div className="flex gap-2">
+              <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Section
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Section</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="sectionTitle">Section Title</Label>
+                      <Input
+                        id="sectionTitle"
+                        value={newSectionTitle}
+                        onChange={(e) => setNewSectionTitle(e.target.value)}
+                        placeholder="Enter section title"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setShowAddSection(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleAddSection} disabled={loading}>
+                        Add Section
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -240,7 +356,7 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
             <Folder className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Sections Yet</h3>
             <p className="text-gray-600 mb-6">Start organizing your course by adding sections.</p>
-            <Button onClick={handleAddSection} disabled={loading}>
+            <Button onClick={() => setShowAddSection(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Your First Section
             </Button>
@@ -276,10 +392,123 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <ContentEditor
-                          sectionId={section.id}
-                          onContentAdded={() => fetchSections()}
-                        />
+                        <Dialog open={showAddContent === section.id} onOpenChange={(open) => setShowAddContent(open ? section.id : null)}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost" 
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Add Content to {section.title}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="contentTitle">Content Title</Label>
+                                  <Input
+                                    id="contentTitle"
+                                    value={contentForm.title}
+                                    onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })}
+                                    placeholder="Enter content title"
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Content Type</Label>
+                                  <Select value={contentForm.type} onValueChange={(value: any) => setContentForm({ ...contentForm, type: value })}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="text">
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-4 w-4" />
+                                          Text/Lesson
+                                        </div>
+                                      </SelectItem>
+                                      <SelectItem value="video">
+                                        <div className="flex items-center gap-2">
+                                          <Video className="h-4 w-4" />
+                                          Video
+                                        </div>
+                                      </SelectItem>
+                                      <SelectItem value="pdf">
+                                        <div className="flex items-center gap-2">
+                                          <File className="h-4 w-4" />
+                                          PDF Document
+                                        </div>
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {/* Content Input based on type */}
+                              {contentForm.type === 'text' && (
+                                <div>
+                                  <Label>Lesson Content</Label>
+                                  <RichTextEditor
+                                    content={contentForm.textContent}
+                                    onChange={(content) => setContentForm({ ...contentForm, textContent: content })}
+                                    placeholder="Write your lesson content here..."
+                                    className="mt-2"
+                                  />
+                                </div>
+                              )}
+
+                              {contentForm.type === 'video' && (
+                                <div>
+                                  <Label htmlFor="videoUrl">Video URL</Label>
+                                  <Input
+                                    id="videoUrl"
+                                    value={contentForm.videoUrl}
+                                    onChange={(e) => setContentForm({ ...contentForm, videoUrl: e.target.value })}
+                                    placeholder="Enter video URL (YouTube, Vimeo, etc.)"
+                                  />
+                                </div>
+                              )}
+
+                              {contentForm.type === 'pdf' && (
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label htmlFor="fileUpload">Upload PDF File</Label>
+                                    <Input
+                                      id="fileUpload"
+                                      type="file"
+                                      accept=".pdf"
+                                      onChange={handleFileUpload}
+                                      className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="fileUrl">Or enter PDF URL</Label>
+                                    <Input
+                                      id="fileUrl"
+                                      value={contentForm.fileUrl}
+                                      onChange={(e) => setContentForm({ ...contentForm, fileUrl: e.target.value })}
+                                      placeholder="Enter PDF URL"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex gap-2 justify-end">
+                                <Button variant="outline" onClick={() => setShowAddContent(null)}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={() => handleAddContent(section.id)} disabled={loading}>
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Content
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -302,10 +531,10 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
                       <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                         <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-gray-500 mb-4">No content added yet</p>
-                        <ContentEditor
-                          sectionId={section.id}
-                          onContentAdded={() => fetchSections()}
-                        />
+                        <Button onClick={() => setShowAddContent(section.id)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Content
+                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -329,18 +558,19 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
                                     {content.content_type.toUpperCase()}
                                   </Badge>
                                   <span className="text-xs text-gray-500">
-                                    Added {new Date(content.created_at!).toLocaleDateString()}
+                                    Added {new Date(content.created_at!).toLocaleDateDate()}
                                   </span>
                                 </div>
                               </div>
                             </div>
                             <div className="flex gap-2">
-                              <ContentEditor
-                                sectionId={section.id}
-                                onContentAdded={() => fetchSections()}
-                                existingContent={content}
-                                isEdit={true}
-                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"

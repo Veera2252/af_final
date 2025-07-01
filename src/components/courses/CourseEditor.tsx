@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,19 +6,17 @@ import { Tables } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { ContentManager } from './ContentManager';
-import { AssignmentManager } from '@/components/assessments/AssignmentManager';
-import { QuizManager } from '@/components/assessments/QuizManager';
+import { AssignmentManager } from './AssignmentManager';
+import { QuizManager } from './QuizManager';
 import { 
   Save, 
   Eye, 
-  Upload, 
   BookOpen, 
   FileText, 
   Award, 
@@ -26,7 +25,8 @@ import {
   Globe,
   Lock,
   DollarSign,
-  Gift
+  Gift,
+  HelpCircle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -274,7 +274,7 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
               Assignments
             </TabsTrigger>
             <TabsTrigger value="quizzes" className="flex items-center gap-2" disabled={courseId === 'new'}>
-              <Award className="h-4 w-4" />
+              <HelpCircle className="h-4 w-4" />
               Quizzes
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
@@ -406,7 +406,7 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
             </Card>
           </TabsContent>
 
-          {/* Content, Assignments, Quizzes tabs remain the same */}
+          {/* Content Tab */}
           <TabsContent value="content">
             {courseId === 'new' ? (
               <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
@@ -425,6 +425,7 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
             )}
           </TabsContent>
 
+          {/* Assignments Tab */}
           <TabsContent value="assignments">
             {courseId === 'new' ? (
               <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
@@ -435,24 +436,26 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
                 </CardContent>
               </Card>
             ) : (
-              <AssignmentManager />
+              <AssignmentManager courseId={courseId!} />
             )}
           </TabsContent>
 
+          {/* Quizzes Tab */}
           <TabsContent value="quizzes">
             {courseId === 'new' ? (
               <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
                 <CardContent className="p-12 text-center">
-                  <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <HelpCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Save Course First</h3>
                   <p className="text-gray-600">Please save the course before adding quizzes.</p>
                 </CardContent>
               </Card>
             ) : (
-              <QuizManager />
+              <QuizManager courseId={courseId!} />
             )}
           </TabsContent>
 
+          {/* Settings Tab */}
           <TabsContent value="settings">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
