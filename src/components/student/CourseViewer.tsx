@@ -89,16 +89,22 @@ export const CourseViewer: React.FC = () => {
 
       if (assignmentsError) throw assignmentsError;
 
+      // Map the data to match the expected interface
+      const mappedSections = sectionsData?.map(section => ({
+        ...section,
+        content: section.course_content || []
+      })) || [];
+
       setCourse({
         ...courseData,
-        sections: sectionsData || [],
+        sections: mappedSections,
         quizzes: quizzesData || [],
         assignments: assignmentsData || []
       });
 
       // Expand first section by default
-      if (sectionsData && sectionsData.length > 0) {
-        setExpandedSections(new Set([sectionsData[0].id]));
+      if (mappedSections && mappedSections.length > 0) {
+        setExpandedSections(new Set([mappedSections[0].id]));
       }
 
     } catch (error: any) {
@@ -138,19 +144,21 @@ export const CourseViewer: React.FC = () => {
   const renderContent = (content: CourseContent) => {
     if (!content.content_data) return null;
 
+    const contentData = content.content_data as any;
+
     switch (content.content_type) {
       case 'text':
         return (
           <div 
             className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: content.content_data.html || '' }}
+            dangerouslySetInnerHTML={{ __html: contentData?.html || contentData?.text || '' }}
           />
         );
       case 'video':
         return (
           <div className="aspect-video">
             <iframe
-              src={content.content_data.url}
+              src={contentData?.url || ''}
               className="w-full h-full rounded-lg"
               allowFullScreen
             />
@@ -162,7 +170,7 @@ export const CourseViewer: React.FC = () => {
             <FileText className="h-16 w-16 text-blue-500 mx-auto mb-4" />
             <p className="text-gray-600 mb-4">PDF Document</p>
             <Button asChild>
-              <a href={content.content_data.url} target="_blank" rel="noopener noreferrer">
+              <a href={contentData?.url || '#'} target="_blank" rel="noopener noreferrer">
                 <Download className="h-4 w-4 mr-2" />
                 Open PDF
               </a>
@@ -226,13 +234,13 @@ export const CourseViewer: React.FC = () => {
                           {index + 1}. {section.title}
                         </span>
                         <Badge variant="outline" className="text-xs">
-                          {section.course_content?.length || 0}
+                          {section.content?.length || 0}
                         </Badge>
                       </div>
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pl-4 space-y-1">
-                    {section.course_content?.map((content, contentIndex) => (
+                    {section.content?.map((content, contentIndex) => (
                       <Button
                         key={content.id}
                         variant="ghost"
