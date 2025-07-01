@@ -558,7 +558,7 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ courseId }) => {
                                     {content.content_type.toUpperCase()}
                                   </Badge>
                                   <span className="text-xs text-gray-500">
-                                    Added {new Date(content.created_at!).toLocaleDateDate()}
+                                    Added {new Date(content.created_at!).toLocaleDateString()}
                                   </span>
                                 </div>
                               </div>
