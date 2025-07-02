@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,8 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { InquiryManagement } from '@/components/admin/InquiryManagement';
 import { CourseEditor } from '@/components/courses/CourseEditor';
+import { AssignmentManager } from '@/components/courses/AssignmentManager';
+import { QuizManager } from '@/components/staff/QuizManager';
 import { 
   BookOpen, 
   Users, 
@@ -21,7 +22,8 @@ import {
   Target,
   BarChart3,
   MessageCircle,
-  Edit
+  Edit,
+  Eye
 } from 'lucide-react';
 
 export const StaffDashboard: React.FC = () => {
@@ -39,6 +41,9 @@ export const StaffDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showCourseEditor, setShowCourseEditor] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [showAssignments, setShowAssignments] = useState(false);
+  const [showQuizzes, setShowQuizzes] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -152,8 +157,25 @@ export const StaffDashboard: React.FC = () => {
     setShowCourseEditor(true);
   };
 
-  const handleCourseEditorClose = () => {
+  const handlePreviewCourse = (courseId: string) => {
+    window.open(`/courses/${courseId}`, '_blank');
+  };
+
+  const handleManageAssignments = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    setShowAssignments(true);
+  };
+
+  const handleManageQuizzes = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    setShowQuizzes(true);
+  };
+
+  const handleBackToDashboard = () => {
     setShowCourseEditor(false);
+    setShowAssignments(false);
+    setShowQuizzes(false);
+    setShowPreview(false);
     setSelectedCourseId(null);
     fetchStaffStats();
     fetchRecentCourses();
@@ -177,13 +199,51 @@ export const StaffDashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <Button 
               variant="outline" 
-              onClick={handleCourseEditorClose}
+              onClick={handleBackToDashboard}
               className="border-purple-200 text-purple-700 hover:bg-purple-50"
             >
               Back to Dashboard
             </Button>
           </div>
-          <CourseEditor courseId={selectedCourseId || 'new'} onSave={handleCourseEditorClose} />
+          <CourseEditor courseId={selectedCourseId || 'new'} onSave={handleBackToDashboard} />
+        </div>
+      </div>
+    );
+  }
+
+  if (showAssignments && selectedCourseId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
+        <div className="container mx-auto py-6">
+          <div className="flex items-center justify-between mb-6">
+            <Button 
+              variant="outline" 
+              onClick={handleBackToDashboard}
+              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+          <AssignmentManager courseId={selectedCourseId} />
+        </div>
+      </div>
+    );
+  }
+
+  if (showQuizzes && selectedCourseId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
+        <div className="container mx-auto py-6">
+          <div className="flex items-center justify-between mb-6">
+            <Button 
+              variant="outline" 
+              onClick={handleBackToDashboard}
+              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+          <QuizManager courseId={selectedCourseId} />
         </div>
       </div>
     );
@@ -372,10 +432,20 @@ export const StaffDashboard: React.FC = () => {
                   <CardContent className="space-y-4">
                     <p className="text-gray-600 mb-4">Create and manage assessments for your courses.</p>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" size="sm" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                        disabled={recentCourses.length === 0}
+                      >
                         Manage Quizzes
                       </Button>
-                      <Button variant="outline" size="sm" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                        disabled={recentCourses.length === 0}
+                      >
                         Manage Assignments
                       </Button>
                     </div>
@@ -424,15 +494,42 @@ export const StaffDashboard: React.FC = () => {
                               <span className="text-sm text-gray-600">₹{course.price}</span>
                             </div>
                           </div>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                            onClick={() => handleEditCourse(course.id)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                              onClick={() => handleEditCourse(course.id)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="border-green-200 text-green-700 hover:bg-green-50"
+                              onClick={() => handlePreviewCourse(course.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Preview
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                              onClick={() => handleManageQuizzes(course.id)}
+                            >
+                              Quiz
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+                              onClick={() => handleManageAssignments(course.id)}
+                            >
+                              Assignment
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>

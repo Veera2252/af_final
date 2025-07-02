@@ -61,6 +61,7 @@ export type Database = {
         Row: {
           course_id: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           due_date: string | null
           id: string
@@ -70,6 +71,7 @@ export type Database = {
         Insert: {
           course_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -79,6 +81,7 @@ export type Database = {
         Update: {
           course_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -293,6 +296,8 @@ export type Database = {
           course_id: string | null
           created_at: string | null
           id: string
+          method: string | null
+          paid_on: string | null
           status: Database["public"]["Enums"]["payment_status"] | null
           stripe_payment_id: string | null
           student_id: string | null
@@ -303,6 +308,8 @@ export type Database = {
           course_id?: string | null
           created_at?: string | null
           id?: string
+          method?: string | null
+          paid_on?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           stripe_payment_id?: string | null
           student_id?: string | null
@@ -313,6 +320,8 @@ export type Database = {
           course_id?: string | null
           created_at?: string | null
           id?: string
+          method?: string | null
+          paid_on?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           stripe_payment_id?: string | null
           student_id?: string | null
@@ -339,40 +348,46 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          course_id: string | null
           created_at: string | null
           email: string
+          fees: number | null
           full_name: string
           id: string
           is_active: boolean | null
           phone: string | null
           profession: string | null
-          role: Database["public"]["Enums"]["user_role"]
+          role: string | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          course_id?: string | null
           created_at?: string | null
           email: string
+          fees?: number | null
           full_name: string
           id: string
           is_active?: boolean | null
           phone?: string | null
           profession?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
           avatar_url?: string | null
+          course_id?: string | null
           created_at?: string | null
           email?: string
+          fees?: number | null
           full_name?: string
           id?: string
           is_active?: boolean | null
           phone?: string | null
           profession?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: string | null
           updated_at?: string | null
         }
         Relationships: []
