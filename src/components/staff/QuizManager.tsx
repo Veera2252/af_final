@@ -35,7 +35,7 @@ interface Question {
   quiz_id: string;
   question_text: string;
   question_type: 'mcq' | 'true_false' | 'fill_blank';
-  options?: string[];
+  options?: string[] | null;
   correct_answer: string;
   points: number;
   order_index: number;
@@ -46,7 +46,11 @@ interface Course {
   title: string;
 }
 
-export const QuizManager: React.FC = () => {
+interface QuizManagerProps {
+  courseId?: string;
+}
+
+export const QuizManager: React.FC<QuizManagerProps> = ({ courseId }) => {
   const { toast } = useToast();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -57,22 +61,27 @@ export const QuizManager: React.FC = () => {
   const [newQuiz, setNewQuiz] = useState({
     title: '',
     description: '',
-    course_id: '',
+    course_id: courseId || '',
     time_limit: 30,
     max_attempts: 1
   });
 
   useEffect(() => {
     fetchQuizzes();
-    fetchCourses();
-  }, []);
+    if (!courseId) {
+      fetchCourses();
+    }
+  }, [courseId]);
 
   const fetchQuizzes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('quizzes')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('quizzes').select('*');
+      
+      if (courseId) {
+        query = query.eq('course_id', courseId);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setQuizzes(data || []);
@@ -114,7 +123,14 @@ export const QuizManager: React.FC = () => {
         .order('order_index');
 
       if (error) throw error;
-      setQuestions(data || []);
+      
+      // Transform the data to match our Question interface
+      const transformedQuestions: Question[] = (data || []).map(q => ({
+        ...q,
+        options: Array.isArray(q.options) ? q.options : null
+      }));
+      
+      setQuestions(transformedQuestions);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -126,9 +142,13 @@ export const QuizManager: React.FC = () => {
 
   const handleCreateQuiz = async () => {
     try {
+      const quizData = courseId ? 
+        { ...newQuiz, course_id: courseId } : 
+        newQuiz;
+
       const { data, error } = await supabase
         .from('quizzes')
-        .insert([newQuiz])
+        .insert([quizData])
         .select()
         .single();
 
@@ -143,7 +163,7 @@ export const QuizManager: React.FC = () => {
       setNewQuiz({
         title: '',
         description: '',
-        course_id: '',
+        course_id: courseId || '',
         time_limit: 30,
         max_attempts: 1
       });
@@ -161,11 +181,11 @@ export const QuizManager: React.FC = () => {
     if (!selectedQuiz) return;
 
     try {
-      // Convert question_type to match database enum
+      // Convert question_type to match database and handle options properly
       const questionsToSave = questions.map((q, index) => ({
         quiz_id: selectedQuiz.id,
         question_text: q.question_text,
-        question_type: q.question_type === 'multiple_choice' ? 'mcq' as const : q.question_type,
+        question_type: q.question_type,
         options: q.options || [],
         correct_answer: q.correct_answer,
         points: q.points,
@@ -263,21 +283,23 @@ export const QuizManager: React.FC = () => {
                   onChange={(e) => setNewQuiz({ ...newQuiz, description: e.target.value })}
                 />
               </div>
-              <div>
-                <Label htmlFor="course">Course</Label>
-                <Select value={newQuiz.course_id} onValueChange={(value) => setNewQuiz({ ...newQuiz, course_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {!courseId && (
+                <div>
+                  <Label htmlFor="course">Course</Label>
+                  <Select value={newQuiz.course_id} onValueChange={(value) => setNewQuiz({ ...newQuiz, course_id: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((course) => (
+                        <SelectItem key={course.id} value={course.id}>
+                          {course.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="time_limit">Time Limit (minutes)</Label>
