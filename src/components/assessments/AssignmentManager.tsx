@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -80,21 +79,34 @@ export const AssignmentManager: React.FC = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const {
+        data: { user },
+        error: userError
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) throw userError || new Error("User not found");
+
+      const { data: insertedAssignments, error: insertError } = await supabase
         .from('assignments')
-        .insert([{
-          ...newAssignment,
-          course_id: courseId,
-          due_date: newAssignment.due_date ? new Date(newAssignment.due_date).toISOString() : null
-        }])
-        .select()
-        .single();
+        .insert([
+          {
+            ...newAssignment,
+            course_id: courseId,
+            created_by: user.id,
+            due_date: newAssignment.due_date
+              ? new Date(newAssignment.due_date).toISOString()
+              : null
+          }
+        ])
+        .select();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
-      setAssignments([...assignments, data]);
+      if (insertedAssignments && insertedAssignments.length > 0) {
+        setAssignments([...assignments, insertedAssignments[0]]);
+      }
       setNewAssignment({ title: '', description: '', due_date: '', max_points: 100 });
-      
+
       toast({
         title: "Success",
         description: "Assignment created successfully!",
