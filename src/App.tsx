@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from "@/components/ui/theme-provider"
@@ -23,7 +24,6 @@ import { PaymentPage } from '@/pages/PaymentPage';
 import { PaymentSuccessPage } from '@/pages/PaymentSuccessPage';
 import { PaymentHistoryPage } from '@/pages/PaymentHistoryPage';
 import { InquiryManagement } from '@/components/admin/InquiryManagement';
-import AdminPayments from '@/components/admin/AdminPayments';
 
 function App() {
   return (
@@ -51,7 +51,8 @@ function App() {
                 <Route path="courses/:id" element={<AdminLayout><CourseEditor /></AdminLayout>} />
                 <Route path="courses/:courseId/content" element={<AdminLayout><ContentManager /></AdminLayout>} />
                 <Route path="certificates" element={<AdminLayout><CertificateUpload /></AdminLayout>} />
-                <Route path="payments" element={<AdminLayout><AdminPayments /></AdminLayout>} />
+                <Route path="quizzes" element={<AdminLayout><QuizManager /></AdminLayout>} />
+                <Route path="assignments" element={<AdminLayout><AssignmentManager /></AdminLayout>} />
                 <Route path="inquiries" element={<AdminLayout><InquiryManagement /></AdminLayout>} />
                 <Route path="settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
               </Route>

@@ -4,24 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { 
-  Users, 
   Plus, 
-  Search, 
-  UserPlus, 
-  Mail, 
-  Phone,
-  MapPin,
-  Briefcase,
+  Edit, 
+  Search,
+  Users,
+  UserCheck,
+  UserX,
   Shield,
-  ShieldCheck,
-  GraduationCap,
-  Power,
-  PowerOff
+  Briefcase,
+  GraduationCap
 } from 'lucide-react';
 
 interface Profile {
@@ -32,21 +27,19 @@ interface Profile {
   phone?: string;
   address?: string;
   profession?: string;
-  is_active: boolean;
+  is_active?: boolean;
   created_at: string;
 }
 
 export const UserManagement: React.FC = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<Profile[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [filterRole, setFilterRole] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     email: '',
-    password: '',
     full_name: '',
     role: 'student' as 'admin' | 'staff' | 'student',
     phone: '',
@@ -58,10 +51,6 @@ export const UserManagement: React.FC = () => {
     fetchUsers();
   }, []);
 
-  useEffect(() => {
-    filterUsers();
-  }, [users, searchTerm, roleFilter]);
-
   const fetchUsers = async () => {
     try {
       const { data, error } = await supabase
@@ -70,7 +59,7 @@ export const UserManagement: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+      setUsers(data as Profile[]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -82,109 +71,39 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const filterUsers = () => {
-    let filtered = users;
-
-    if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => user.role === roleFilter);
-    }
-
-    setFilteredUsers(filtered);
-  };
-
-  const createUser = async () => {
-    if (!newUser.email || !newUser.password || !newUser.full_name) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
+  const handleCreateUser = async () => {
     try {
-      console.log('Creating user with data:', newUser);
-      
-      // Use the regular signup method which will trigger our database trigger
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
-        password: newUser.password,
+        password: 'temp123!', // Temporary password
         options: {
           data: {
             full_name: newUser.full_name,
             role: newUser.role,
             phone: newUser.phone,
             address: newUser.address,
-            profession: newUser.profession,
+            profession: newUser.profession
           }
         }
       });
 
-      if (authError) {
-        console.error('Supabase auth error:', authError);
-        throw authError;
-      }
-
-      console.log('User created successfully:', authData);
+      if (authError) throw authError;
 
       toast({
         title: "Success",
-        description: `${newUser.role} created successfully! They will need to verify their email.`,
+        description: "User created successfully! They will receive an email to set their password.",
       });
 
+      setIsCreateDialogOpen(false);
       setNewUser({
         email: '',
-        password: '',
         full_name: '',
         role: 'student',
         phone: '',
         address: '',
         profession: ''
       });
-      setIsCreateDialogOpen(false);
-      
-      // Refresh the users list
       fetchUsers();
-
-    } catch (error: any) {
-      console.error('Error creating user:', error);
-      toast({
-        title: "Error",
-        description: `Failed to create user: ${error.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: !currentStatus })
-        .eq('id', userId);
-
-      if (error) throw error;
-
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { ...user, is_active: !currentStatus }
-          : user
-      ));
-
-      toast({
-        title: "Success",
-        description: `User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`,
-      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -194,35 +113,32 @@ export const UserManagement: React.FC = () => {
     }
   };
 
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
+
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'admin':
-        return <Shield className="h-4 w-4" />;
-      case 'staff':
-        return <ShieldCheck className="h-4 w-4" />;
-      case 'student':
-        return <GraduationCap className="h-4 w-4" />;
-      default:
-        return <Users className="h-4 w-4" />;
+      case 'admin': return <Shield className="h-4 w-4" />;
+      case 'staff': return <Briefcase className="h-4 w-4" />;
+      case 'student': return <GraduationCap className="h-4 w-4" />;
+      default: return <Users className="h-4 w-4" />;
     }
   };
 
-  const getRoleBadge = (role: string) => {
-    const variants = {
-      admin: 'destructive',
-      staff: 'default',
-      student: 'secondary'
-    } as const;
-
-    return (
-      <Badge variant={variants[role as keyof typeof variants]} className="flex items-center gap-1">
-        {getRoleIcon(role)}
-        {role.toUpperCase()}
-      </Badge>
-    );
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'admin': return 'destructive';
+      case 'staff': return 'default';
+      case 'student': return 'secondary';
+      default: return 'outline';
+    }
   };
 
-  if (loading && users.length === 0) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -232,49 +148,21 @@ export const UserManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">User Management</h1>
-        
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               <Plus className="h-4 w-4 mr-2" />
-              Add User
+              Add New User
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
-                Create New User
-              </DialogTitle>
+              <DialogTitle>Create New User</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="full_name">Full Name *</Label>
-                  <Input
-                    id="full_name"
-                    value={newUser.full_name}
-                    onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-                    placeholder="Enter full name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="role">Role *</Label>
-                  <Select value={newUser.role} onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
               <div>
                 <Label htmlFor="email">Email *</Label>
                 <Input
@@ -282,177 +170,133 @@ export const UserManagement: React.FC = () => {
                   type="email"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  placeholder="Enter email address"
                 />
               </div>
-              
               <div>
-                <Label htmlFor="password">Password *</Label>
+                <Label htmlFor="full_name">Full Name *</Label>
                 <Input
-                  id="password"
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  placeholder="Enter password"
+                  id="full_name"
+                  value={newUser.full_name}
+                  onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
                 />
               </div>
-              
+              <div>
+                <Label htmlFor="role">Role *</Label>
+                <Select value={newUser.role} onValueChange={(value: 'admin' | 'staff' | 'student') => setNewUser({ ...newUser, role: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
                   value={newUser.phone}
                   onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                  placeholder="Enter phone number"
                 />
               </div>
-              
               <div>
                 <Label htmlFor="profession">Profession</Label>
                 <Input
                   id="profession"
                   value={newUser.profession}
                   onChange={(e) => setNewUser({ ...newUser, profession: e.target.value })}
-                  placeholder="Enter profession"
                 />
               </div>
-              
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={newUser.address}
-                  onChange={(e) => setNewUser({ ...newUser, address: e.target.value })}
-                  placeholder="Enter address"
-                />
-              </div>
-              
-              <Button onClick={createUser} disabled={loading} className="w-full">
-                {loading ? 'Creating...' : 'Create User'}
+              <Button onClick={handleCreateUser} className="w-full">
+                Create User
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="md:w-48">
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Search and Filter */}
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <Select value={filterRole} onValueChange={setFilterRole}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="student">Student</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      {/* Users List */}
-      {filteredUsers.length === 0 ? (
+      {/* Users Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredUsers.map((user) => (
+          <Card key={user.id} className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-lg">{user.full_name}</CardTitle>
+                <Badge variant={getRoleBadgeVariant(user.role)} className="flex items-center gap-1">
+                  {getRoleIcon(user.role)}
+                  {user.role}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-gray-600">{user.email}</p>
+              {user.phone && (
+                <p className="text-sm text-gray-500">📞 {user.phone}</p>
+              )}
+              {user.profession && (
+                <p className="text-sm text-gray-500">💼 {user.profession}</p>
+              )}
+              <div className="flex items-center gap-2">
+                {user.is_active ? (
+                  <Badge variant="default" className="flex items-center gap-1">
+                    <UserCheck className="h-3 w-3" />
+                    Active
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <UserX className="h-3 w-3" />
+                    Inactive
+                  </Badge>
+                )}
+              </div>
+              <div className="text-xs text-gray-500">
+                Created {new Date(user.created_at).toLocaleDateString()}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filteredUsers.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Users Found</h3>
-            <p className="text-gray-600">
-              {searchTerm || roleFilter !== 'all' 
-                ? 'No users match your current filters.' 
-                : 'Create your first user to get started.'
-              }
+            <p className="text-gray-600 mb-4">
+              {searchTerm || filterRole !== 'all' 
+                ? 'No users match your search criteria.' 
+                : 'No users have been created yet.'}
             </p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredUsers.map((user) => (
-            <Card key={user.id}>
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                      {user.full_name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-lg">{user.full_name}</h3>
-                        {getRoleBadge(user.role)}
-                        <Badge variant={user.is_active ? "default" : "secondary"}>
-                          {user.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          <span>{user.email}</span>
-                        </div>
-                        {user.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4" />
-                            <span>{user.phone}</span>
-                          </div>
-                        )}
-                        {user.profession && (
-                          <div className="flex items-center gap-2">
-                            <Briefcase className="h-4 w-4" />
-                            <span>{user.profession}</span>
-                          </div>
-                        )}
-                        {user.address && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            <span>{user.address}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-2">
-                        Joined {new Date(user.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={user.is_active ? "destructive" : "default"}
-                      size="sm"
-                      onClick={() => toggleUserStatus(user.id, user.is_active)}
-                    >
-                      {user.is_active ? (
-                        <>
-                          <PowerOff className="h-4 w-4 mr-2" />
-                          Deactivate
-                        </>
-                      ) : (
-                        <>
-                          <Power className="h-4 w-4 mr-2" />
-                          Activate
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       )}
     </div>
   );
