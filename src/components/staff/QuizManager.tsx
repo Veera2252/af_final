@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -124,10 +123,16 @@ export const QuizManager: React.FC<QuizManagerProps> = ({ courseId }) => {
 
       if (error) throw error;
       
-      // Transform the data to match our Question interface
+      // Transform the data to match our Question interface with proper type conversion
       const transformedQuestions: Question[] = (data || []).map(q => ({
-        ...q,
-        options: Array.isArray(q.options) ? q.options : null
+        id: q.id,
+        quiz_id: q.quiz_id || '',
+        question_text: q.question_text,
+        question_type: q.question_type,
+        options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : null,
+        correct_answer: q.correct_answer,
+        points: q.points || 1,
+        order_index: q.order_index
       }));
       
       setQuestions(transformedQuestions);

@@ -10,7 +10,7 @@ import { StaffDashboard } from '@/pages/StaffDashboard';
 import { StudentDashboard } from '@/pages/StudentDashboard';
 import { StudentCertificates } from '@/pages/StudentCertificates';
 import { UserManagement } from '@/components/admin/UserManagement';
-import { CourseList } from '@/components/admin/CourseList';
+import { AdminCourseManagement } from '@/components/admin/AdminCourseManagement';
 import { CourseEditor } from '@/components/admin/CourseEditor';
 import { ContentManager } from '@/components/admin/ContentManager';
 import { CertificateUpload } from '@/components/admin/CertificateUpload';
@@ -46,7 +46,7 @@ function App() {
                 <Route index element={<AdminDashboard />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="users" element={<AdminLayout><UserManagement /></AdminLayout>} />
-                <Route path="courses" element={<AdminLayout><CourseList /></AdminLayout>} />
+                <Route path="courses" element={<AdminLayout><AdminCourseManagement /></AdminLayout>} />
                 <Route path="courses/new" element={<AdminLayout><CourseEditor /></AdminLayout>} />
                 <Route path="courses/:id" element={<AdminLayout><CourseEditor /></AdminLayout>} />
                 <Route path="courses/:courseId/content" element={<AdminLayout><ContentManager /></AdminLayout>} />
@@ -60,7 +60,7 @@ function App() {
               {/* Staff Routes */}
               <Route path="/staff" element={<ProtectedRoute allowedRoles={['admin', 'staff']} />}>
                 <Route path="dashboard" element={<StaffDashboard />} />
-                <Route path="courses" element={<AdminLayout><CourseList /></AdminLayout>} />
+                <Route path="courses" element={<AdminLayout><AdminCourseManagement /></AdminLayout>} />
                 <Route path="courses/new" element={<AdminLayout><CourseEditor /></AdminLayout>} />
                 <Route path="courses/:id" element={<AdminLayout><CourseEditor /></AdminLayout>} />
                 <Route path="courses/:courseId/content" element={<AdminLayout><ContentManager /></AdminLayout>} />
