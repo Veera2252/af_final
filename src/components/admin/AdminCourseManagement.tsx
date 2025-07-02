@@ -291,7 +291,16 @@ export const AdminCourseManagement: React.FC = () => {
           <TabsContent value="quizzes">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardContent className="p-6">
-                <QuizManager courseId={selectedCourse?.id} />
+                <div>
+                  {selectedCourse ? (
+                    <QuizManager courseId={selectedCourse.id} />
+                  ) : (
+                    <div className="text-center py-8">
+                      <HelpCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">Please select a course to manage quizzes.</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -299,7 +308,16 @@ export const AdminCourseManagement: React.FC = () => {
           <TabsContent value="assignments">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardContent className="p-6">
-                <AssignmentManager courseId={selectedCourse?.id} />
+                <div>
+                  {selectedCourse ? (
+                    <AssignmentManager courseId={selectedCourse.id} />
+                  ) : (
+                    <div className="text-center py-8">
+                      <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">Please select a course to manage assignments.</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
