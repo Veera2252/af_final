@@ -73,10 +73,13 @@ export const AdminCourseManagement: React.FC = () => {
     setActiveTab('create-course');
   };
 
-  const handleEditCourse = (course: Course) => {
-    setSelectedCourse(course);
-    setShowCreateCourse(true);
-    setActiveTab('create-course');
+  const handleEditCourse = (courseId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    if (course) {
+      setSelectedCourse(course);
+      setShowCreateCourse(true);
+      setActiveTab('create-course');
+    }
   };
 
   const handleBackToCourses = () => {
@@ -84,6 +87,28 @@ export const AdminCourseManagement: React.FC = () => {
     setSelectedCourse(null);
     setActiveTab('courses');
     fetchCourses();
+  };
+
+  const handlePreviewCourse = (courseId: string) => {
+    navigate(`/course/${courseId}/preview`);
+  };
+
+  const handleManageQuizzes = (courseId: string) => {
+    // Set the selected course and switch to quizzes tab
+    const course = courses.find(c => c.id === courseId);
+    if (course) {
+      setSelectedCourse(course);
+      setActiveTab('quizzes');
+    }
+  };
+
+  const handleManageAssignments = (courseId: string) => {
+    // Set the selected course and switch to assignments tab
+    const course = courses.find(c => c.id === courseId);
+    if (course) {
+      setSelectedCourse(course);
+      setActiveTab('assignments');
+    }
   };
 
   const togglePublishStatus = async (courseId: string, currentStatus: boolean) => {
@@ -172,86 +197,83 @@ export const AdminCourseManagement: React.FC = () => {
 
           <TabsContent value="courses" className="space-y-6">
             {/* Recent Courses Section */}
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-                <CardTitle className="flex items-center gap-2 text-gray-900">
-                  <BookOpen className="h-5 w-5" />
-                  Recent Courses
+            <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg">
+                      <BookOpen className="h-6 w-6 text-white" />
+                    </div>
+                    Recent Courses
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 {courses.length === 0 ? (
-                  <div className="text-center py-12">
-                    <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Courses Found</h3>
-                    <p className="text-gray-600 mb-4">
-                      Create your first course to get started with your learning platform.
-                    </p>
-                    <Button onClick={handleCreateNewCourse}>
-                      <Plus className="h-4 w-4 mr-2" />
+                  <div className="text-center py-8">
+                    <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">No courses created yet.</p>
+                    <Button 
+                      onClick={handleCreateNewCourse}
+                      className="bg-gradient-to-r from-blue-600 to-blue-700"
+                    >
                       Create Your First Course
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courses.map((course) => (
-                      <Card key={course.id} className="hover:shadow-lg transition-shadow bg-white">
-                        <CardHeader>
-                          <div className="flex justify-between items-start">
-                            <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
-                            <div className="flex gap-1">
-                              <Badge variant={course.is_published ? "default" : "secondary"}>
-                                {course.is_published ? 'Published' : 'Draft'}
-                              </Badge>
-                              <Badge variant={course.is_free ? "outline" : "default"}>
-                                {course.is_free ? 'Free' : `$${course.price}`}
-                              </Badge>
-                            </div>
+                  <div className="space-y-4">
+                    {courses.map((course: any) => (
+                      <div key={course.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{course.title}</h4>
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              course.is_published 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {course.is_published ? 'Published' : 'Draft'}
+                            </span>
+                            <span className="text-sm text-gray-600">₹{course.price}</span>
                           </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <p className="text-gray-600 line-clamp-3">
-                            {course.description || 'No description available'}
-                          </p>
-                          
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <DollarSign className="h-4 w-4" />
-                            <span>{course.is_free ? 'Free Course' : `$${course.price}`}</span>
-                          </div>
-
-                          <div className="flex gap-2 flex-wrap">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditCourse(course)}
-                            >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/admin/courses/${course.id}/content`)}
-                            >
-                              <Settings className="h-4 w-4 mr-1" />
-                              Content
-                            </Button>
-
-                            <Button
-                              variant={course.is_published ? "destructive" : "default"}
-                              size="sm"
-                              onClick={() => togglePublishStatus(course.id, course.is_published)}
-                            >
-                              {course.is_published ? 'Unpublish' : 'Publish'}
-                            </Button>
-                          </div>
-
-                          <div className="text-xs text-gray-500">
-                            Created {new Date(course.created_at).toLocaleDateString()}
-                          </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                            onClick={() => handleEditCourse(course.id)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-green-200 text-green-700 hover:bg-green-50"
+                            onClick={() => handlePreviewCourse(course.id)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Preview
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                            onClick={() => handleManageQuizzes(course.id)}
+                          >
+                            Quiz
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-orange-200 text-orange-700 hover:bg-orange-50"
+                            onClick={() => handleManageAssignments(course.id)}
+                          >
+                            Assignment
+                          </Button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -269,7 +291,7 @@ export const AdminCourseManagement: React.FC = () => {
           <TabsContent value="quizzes">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardContent className="p-6">
-                <QuizManager />
+                <QuizManager courseId={selectedCourse?.id} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -277,7 +299,7 @@ export const AdminCourseManagement: React.FC = () => {
           <TabsContent value="assignments">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
               <CardContent className="p-6">
-                <AssignmentManager />
+                <AssignmentManager courseId={selectedCourse?.id} />
               </CardContent>
             </Card>
           </TabsContent>
