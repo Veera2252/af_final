@@ -4,6 +4,49 @@ import { X, Star, Users, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+const getImageUrl = (path: string) => {
+  if (!path) return "/thumbnails/bg.png";
+
+  if (path.startsWith('http') && !path.includes('blob:')) return path;
+
+  // Handle blob URLs by mapping to available thumbnails
+  if (path.includes('blob:')) {
+    // Map blob URLs to available thumbnail files
+    const availableThumbnails = [
+      '/thumbnails/a5.jpg',
+      '/thumbnails/a7.png',
+      '/thumbnails/a8.jpg',
+      '/thumbnails/a9.jpg',
+      '/thumbnails/a10.jpg',
+      '/thumbnails/a11.jpg',
+      '/thumbnails/python.png',
+      '/thumbnails/excel.png',
+      '/thumbnails/ui ux.jpg',
+      '/thumbnails/ai ds.jpg'
+    ];
+
+    // Use a simple hash to consistently map blob URLs to thumbnails
+    const hash = path.split('/').pop() || '';
+    const index = hash.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % availableThumbnails.length;
+    return availableThumbnails[index];
+  }
+
+  // Handle different path formats
+  let cleanPath = path;
+  if (path.startsWith('/')) {
+    cleanPath = path.substring(1); // Remove leading slash
+  }
+
+  try {
+    // Use the correct bucket name (thumbnails)
+    const { data } = supabase.storage.from("thumbnails").getPublicUrl(cleanPath);
+    return data?.publicUrl || "/thumbnails/bg.png";
+  } catch (error) {
+    console.error('Error generating image URL:', error);
+    return "/thumbnails/bg.png";
+  }
+};
+
 interface CoursePreviewProps {
   courseId: string;
   onClose: () => void;
@@ -93,9 +136,15 @@ export const CoursePreview: React.FC<CoursePreviewProps> = ({ courseId, onClose 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <img
-                src={course.thumbnail_url || "/thumbnails/a1.jpg"}
+                src={getImageUrl(course.thumbnail_url || "")}
                 alt={course.title || course.name}
                 className="w-full h-64 object-cover rounded-lg mb-4"
+                onError={e => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src !== "/thumbnails/bg.png") {
+                    target.src = "/thumbnails/bg.png";
+                  }
+                }}
               />
               <div className="space-y-2">
                 <div className="flex items-center gap-2">

@@ -175,38 +175,61 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({
     }
   };
 
-  const handleThumbnailUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const uploadThumbnail = async () => {
-        // Upload to Supabase Storage
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-        const { data, error } = await supabase.storage
-          .from('thumbnails')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false,
-          });
-        if (error) {
-          toast({
-            title: "Error",
-            description: "Failed to upload thumbnail",
-            variant: "destructive",
-          });
-          return;
-        }
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage
-          .from('thumbnails')
-          .getPublicUrl(fileName);
-        setCourseData({ ...courseData, thumbnail_url: publicUrlData.publicUrl });
-        toast({
-          title: "Success",
-          description: "Thumbnail uploaded successfully!",
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "File size must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please select a valid image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const fileName = `course-thumbnail-${Date.now()}-${file.name}`;
+      
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('course-files')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
         });
-      };
-      uploadThumbnail();
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('course-files')
+        .getPublicUrl(fileName);
+
+      setCourseData({ ...courseData, thumbnail_url: publicUrl });
+      
+      toast({
+        title: "Success",
+        description: "Thumbnail uploaded successfully!",
+      });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload thumbnail",
+        variant: "destructive",
+      });
     }
   };
 

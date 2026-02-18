@@ -16,7 +16,11 @@
     - Includes certificate metadata and download URLs
 */
 
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient } from '@supabase/supabase-js'
+
+// Provide a minimal declaration for the Deno global so TypeScript in the
+// editor/build doesn't error when checking this Deno edge function file.
+declare const Deno: any
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

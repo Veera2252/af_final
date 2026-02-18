@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Shield, Users } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Shield, Users, X } from 'lucide-react';
+import { SUPABASE_URL } from '@/integrations/supabase/client';
 
 export const ModernLoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -21,7 +22,7 @@ export const ModernLoginForm: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
-  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, oauthDebug, setOauthDebug, resetDebug, setResetDebug } = useAuth();
   const { toast } = useToast();
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -337,9 +338,33 @@ export const ModernLoginForm: React.FC = () => {
                             )}
                           </Button>
                         </form>
+                        {/* Reset debug info */}
+                        <div className="mt-3 text-xs text-gray-600 bg-gray-50 p-2 rounded border">
+                          <div className="flex items-center justify-between mb-1">
+                            <strong>Reset Debug</strong>
+                            <button type="button" className="text-gray-500" onClick={() => setResetDebug(null)}>Clear</button>
+                          </div>
+                          <pre className="max-h-40 overflow-auto text-xs">{resetDebug ? JSON.stringify(resetDebug, null, 2) : 'No data'}</pre>
+                        </div>
                       </DialogContent>
                     </Dialog>
                   </div>
+
+                  {/* DEBUG PANEL - remove in production */}
+                  {/* <div className="mt-4 p-3 bg-gray-50 border rounded text-xs text-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <strong>OAuth Debug</strong>
+                      <button
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setOauthDebug(null)}
+                        type="button"
+                      ><X className="h-4 w-4" /></button>
+                    </div>
+                    <div className="mb-1"><strong>SUPABASE_URL:</strong> <span className="text-gray-600">{SUPABASE_URL}</span></div>
+                    <div className="mb-1"><strong>origin:</strong> <span className="text-gray-600">{window.location.origin}</span></div>
+                    <div className="mb-1"><strong>last OAuth response:</strong></div>
+                    <pre className="whitespace-pre-wrap text-xs text-gray-600 max-h-40 overflow-auto">{oauthDebug ? JSON.stringify(oauthDebug, null, 2) : 'No data'}</pre>
+                  </div> */}
                 </div>
               </TabsContent>
               

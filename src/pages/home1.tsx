@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef  } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,11 +6,12 @@ import { ChevronRight, Menu, X, Star, Award, Users, TrendingUp, Shield, Zap, Boo
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CountdownTimer } from "@/components/home/CountdownTimer";
-import CourseCarousel from "@/components/home/CourseCarousel";
+import { CourseCarousel } from "@/components/home/CourseCarousel";
 import { ContactForm } from "@/components/home/ContactForm";
 import Features from "@/components/home/Features";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import { CourseChatbot } from "@/components/home/CourseChatbot";
+
 
 const Home = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -69,34 +70,96 @@ const Home = () => {
     }
   ];
 
+const VideoGallery = () => {
   const videos = [
     {
       id: 1,
       title: "Programming Fundamentals",
-      src: "/Videos/alphavideo1.mp4",
-      thumbnail: "/thumbnails/a11.jpg"
+      src: "/videos/alphavideo1.mp4",
+      thumbnail: "/thumbnails/a11.jpg",
     },
     {
       id: 2,
-      title: "Web Development Mastery", 
-      src: "/Videos/alphavideo2.mp4",
-      thumbnail: "/thumbnails/a10.jpg"
+      title: "Web Development Mastery",
+      src: "/videos/alphavideo2.mp4",
+      thumbnail: "/thumbnails/a10.jpg",
     },
     {
       id: 3,
       title: "Data Science Excellence",
-      src: "/Videos/alphavideo3.mp4", 
-      thumbnail: "/thumbnails/a7.png"
-    }
+      src: "/videos/alphavideo3.mp4",
+      thumbnail: "/thumbnails/a7.png",
+    },
   ];
 
+  return (
+    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
+      {videos.map((video) => (
+        <VideoCard key={video.id} video={video} />
+      ))}
+    </div>
+  );
+};
 
+const VideoCard = ({ video }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
 
+  const handlePlay = () => {
+    if (videoRef.current) {
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+  };
+
+  return (
+    <Card className="bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden hover:bg-white/20 transition-all">
+      <CardContent className="p-0">
+        <div className="relative">
+          <video
+            ref={videoRef}
+            className="w-full h-[280px] object-cover"
+            controls
+            preload="metadata"
+            poster={video.thumbnail}
+            onPause={handlePause}
+          >
+            <source src={video.src} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+
+          {!isPlaying && (
+            <div
+              className="absolute inset-0 bg-black/40 hover:bg-black/20 transition-colors flex items-center justify-center cursor-pointer"
+              onClick={handlePlay}
+            >
+              <Play className="h-12 w-12 text-white opacity-80 hover:opacity-100 transition-opacity" />
+            </div>
+          )}
+        </div>
+
+        <div className="p-6">
+          <h4 className="text-lg font-semibold text-white mb-2">
+            {video.title}
+          </h4>
+          <p className="text-white/80 text-sm">
+            Experience our hands-on approach to learning with real-world
+            projects.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+ 
   return (
     <div className="min-h-screen">
       {/* Countdown Timer */}
       <CountdownTimer />
-      
 
       {/* Navigation Header */}
       <header className="bg-card shadow-sm border-b border-border">
@@ -114,14 +177,14 @@ const Home = () => {
               <a href="#courses" className="text-muted-foreground hover:text-foreground transition-colors">Courses</a>
               <a href="#why-choose" className="text-muted-foreground hover:text-foreground transition-colors">Why Choose Us</a>
               <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="bg-blue-800 hover:bg-primary/90 text-primary-foreground"
                 onClick={() => navigate('/login')}
               >
                 LOGIN
               </Button>
-              {/* <Button 
+              {/* <Button
                 className="bg-[#FC6A03]/90 hover:bg-primary/90 text-primary-foreground"
                 onClick={() => navigate('/login')}
               >
@@ -147,14 +210,14 @@ const Home = () => {
                 <a href="#courses" className="text-muted-foreground">Courses</a>
                 <a href="#why-choose" className="text-muted-foreground">Why Choose Us</a>
                 <a href="#contact" className="text-muted-foreground">Contact</a>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-primary font-semibold w-fit"
                   onClick={() => navigate('/login')}
                 >
                   LOGIN
                 </Button>
-                <Button 
+                <Button
                   className="bg-primary hover:bg-primary/90 text-primary-foreground w-fit"
                   onClick={() => navigate('/login')}
                 >
@@ -166,74 +229,38 @@ const Home = () => {
         </div>
       </header>
 
-<section className="relative bg-blue-800 text-white pt-[10px] pb-[40px] overflow-hidden">
-  {/* Background Pattern */}
-  <div className="absolute inset-0 opacity-10">
-    <div
-      className="w-full h-full bg-repeat"
-      style={{
-        backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-      }}
-    ></div>
-  </div>
+      <section className="relative bg-blue-800 text-white pt-[10px] pb-[40px] overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div
+            className="w-full h-full bg-repeat"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+            }}
+          ></div>
+        </div>
 
-
-  {/* Hero Section */}
-  <div className="mt-5 container mx-auto px-2">
-<div className="text-center mb-12">
-  <h1 className="text-4xl font-bold mb-4">
-    Next Generation Learning Space
-  </h1>
-  <p className="mb-2">
-    Unlocking the Power of Minds
-  </p>
-  <div className="flex justify-center gap-6 mt-4 text-lg">
-    <span className="font-semibold text-[#00FF00]">📚 Enrolled Students: 300+</span>
-    <span className="font-semibold text-[#00FF00]">✅ Success Rate: 90%+</span>
-  </div>
-</div>
-
-
-    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
-      {videos.map((video) => (
-        <Card
-          key={video.id}
-          className="bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden hover:bg-white/20 transition-all"
-        >
-          <CardContent className="p-0">
-            <div className="relative">
-              <video
-                className="w-full h-[280px] object-cover"
-                controls
-                preload="metadata"
-                poster={video.thumbnail}
-              >
-                <source src={video.src} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-              <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors flex items-center justify-center">
-                <Play className="h-12 w-12 text-white opacity-80 hover:opacity-100 transition-opacity" />
-              </div>
+        {/* Hero Section */}
+        <div className="mt-5 container mx-auto px-2">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold mb-4">
+              Next Generation Learning Space
+            </h1>
+            <p className="mb-2">
+              Unlocking the Power of Minds
+            </p>
+            <div className="flex justify-center gap-6 mt-4 text-lg">
+              <span className="font-semibold text-[#00FF00]">📚 Enrolled Students: 300+</span>
+              <span className="font-semibold text-[#00FF00]">✅ Success Rate: 90%+</span>
             </div>
-            <div className="p-6">
-              <h4 className="text-lg font-semibold text-white mb-2">
-                {video.title}
-              </h4>
-              <p className="text-white/80 text-sm">
-                Experience our hands-on approach to learning with real-world
-                projects.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  </div>
-</section>
+          </div>
+
+          <VideoGallery />
+        </div>
+      </section>
 
       {/* Why Choose Alpha Fly */}
-
       <div id="features">
         <Features />
       </div>
@@ -251,20 +278,19 @@ const Home = () => {
       {/* Contact Form */}
       <ContactForm />
 
-  {/* Chatbot (fixed position, overlays all sections) */}
-  <CourseChatbot />
+      {/* Chatbot (fixed position, overlays all sections) */}
+      <CourseChatbot />
 
-  {/* Footer */}
-  <footer className="bg-background border-t border-border py-16">
+      {/* Footer */}
+      <footer className="bg-background border-t border-border py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Company Info */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <div className="rounded text-primary-foreground px-3 py-1 font-bold text-xl">
-                   <img src="thumbnails/logo2.png" alt="Alpha Fly Logo" className="h-16 w-55" />
+                  <img src="thumbnails/logo2.png" alt="Alpha Fly Logo" className="h-16 w-55" />
                 </div>
-              
               </div>
               <p className="text-muted-foreground leading-relaxed">
                 Transforming careers through quality education and practical skills development since 2023.
@@ -296,16 +322,16 @@ const Home = () => {
             {/* Contact */}
             <div>
               <h4 className="font-semibold text-foreground mb-4">Contact</h4>
-    <ul className="space-y-2 text-muted-foreground">
-      <li className="flex items-center gap-2">
-        <Mail size={18} className="text-primary" />
-        alphafly.edu@gmail.com
-      </li>
-      <li className="flex items-center gap-2">
-        <Phone size={18} className="text-primary" />
-        +91 8015 8016 89
-      </li>
-    </ul>
+              <ul className="space-y-2 text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <Mail size={18} className="text-primary" />
+                  alphafly.edu@gmail.com
+                </li>
+                <li className="flex items-center gap-2">
+                  <Phone size={18} className="text-primary" />
+                  +91 8015 8016 89
+                </li>
+              </ul>
             </div>
           </div>
 

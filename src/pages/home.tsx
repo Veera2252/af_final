@@ -6,7 +6,7 @@ import { ChevronRight, Menu, X, Star, Award, Users, TrendingUp, Shield, Zap, Boo
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CountdownTimer } from "@/components/home/CountdownTimer";
-import CourseCarousel from "@/components/home/CourseCarousel";
+import { CourseCarousel } from "@/components/home/CourseCarousel";
 import { ContactForm } from "@/components/home/ContactForm";
 import Features from "@/components/home/Features";
 import TestimonialsSection from "@/components/TestimonialsSection";
@@ -72,19 +72,19 @@ const Home = () => {
     {
       id: 1,
       title: "Programming Fundamentals",
-      src: "/Videos/alphavideo1.mp4",
+      src: "/videos/alphavideo1.mp4",
       thumbnail: "/thumbnails/a1.jpg"
     },
     {
       id: 2,
-      title: "Web Development Mastery", 
-      src: "/Videos/alphavideo2.mp4",
+      title: "Web Development Mastery",
+      src: "/videos/alphavideo2.mp4",
       thumbnail: "/thumbnails/a2.jpg"
     },
     {
       id: 3,
       title: "Data Science Excellence",
-      src: "/Videos/alphavideo3.mp4", 
+      src: "/videos/alphavideo3.mp4",
       thumbnail: "/thumbnails/a3.jpg"
     }
   ];

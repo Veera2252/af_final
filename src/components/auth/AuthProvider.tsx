@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_URL } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { Tables } from '@/integrations/supabase/types';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  oauthDebug: any | null;
+  setOauthDebug: React.Dispatch<React.SetStateAction<any | null>>;
+  resetDebug: any | null;
+  setResetDebug: React.Dispatch<React.SetStateAction<any | null>>;
   resetPassword: (email: string) => Promise<{ success: boolean; message: string; }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
@@ -39,6 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [oauthDebug, setOauthDebug] = useState<any | null>(null);
+  const [resetDebug, setResetDebug] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -153,9 +159,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const navigateToRoleDashboard = (role: string) => {
-    // Only navigate if we're currently on the home page or login page
+    // Only navigate if we're currently on a public entry page (home, login, or oauth callback)
     const currentPath = window.location.pathname;
-    if (currentPath === '/' || currentPath === '/login') {
+    if (currentPath === '/' || currentPath === '/login' || currentPath === '/auth/callback') {
       switch (role) {
         case 'admin':
           window.location.href = '/admin/dashboard';
@@ -273,23 +279,25 @@ const signInWithGoogle = async () => {
   try {
     console.log("Attempting Google OAuth sign-in...");
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
+  // Use the current origin so redirectTo matches the running dev server (avoids mismatches like :5173 vs :8081)
+  // During local testing this should equal whatever Vite prints (e.g., http://localhost:8081)
+  const callbackUrl = `${window.location.origin}/auth/callback`;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: callbackUrl,
         },
-      },
-    });
+      });
+
+      // Expose debug info for the UI to inspect
+      setOauthDebug({ data, error, redirectTo: callbackUrl });
 
     if (error) {
       console.error("Google OAuth error:", error);
 
       let message = "Google sign-in failed.";
       if (error.message.includes("provider is not enabled")) {
-        message = "Google sign-in is not configured in Supabase.";
+        message = `Google sign-in is not enabled in Supabase. Please enable it at ${SUPABASE_URL} → Authentication → Providers → Google`;
       } else if (error.message.includes("Invalid login credentials")) {
         message = "Invalid Google credentials. Please try again.";
       } else if (error.message.includes("OAuth")) {
@@ -309,14 +317,18 @@ const signInWithGoogle = async () => {
 
     console.log("Google OAuth initiated successfully");
 
-    // open OAuth URL
-    if (data?.url) {
-      window.location.href = data.url;
-    } else {
-      throw new Error("No OAuth URL received from Supabase. Check configuration.");
-    }
+      // Most browsers will redirect automatically. If Supabase returns a URL, navigate to it.
+      const oauthUrl = (data as any)?.url || (data as any)?.data?.url;
+      if (oauthUrl) {
+        // Use location.href to force navigation in same tab (safer than window.open for some browsers)
+        window.location.href = oauthUrl;
+      } else {
+        // No URL returned — sometimes the SDK performs a redirect itself. Log and continue.
+        console.log('No oauth url returned; awaiting redirect handled by SDK');
+      }
   } catch (err: any) {
     console.error("Google sign-in error:", err);
+    setOauthDebug({ error: err });
     toast({
       title: "Google Sign-in Error",
       description: err.message || "Unexpected error occurred during Google sign-in.",
@@ -331,23 +343,31 @@ const signInWithGoogle = async () => {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
       });
+
+      // Store debug info to help troubleshoot SMTP/redirect issues
+      setResetDebug({ data, error });
+
       if (error) {
         console.error('Reset password error:', error);
-        if (error.message.includes('Unable to validate email address')) {
+        // Provide helpful messages for common errors
+        if (error.message?.includes('Unable to validate email address')) {
           throw new Error('Please enter a valid email address.');
-        } else if (error.message.includes('Email rate limit exceeded') || error.code === 'over_email_send_rate_limit') {
+        } else if (error.message?.includes('Email rate limit exceeded') || error.code === 'over_email_send_rate_limit') {
           throw new Error('Too many reset requests. Please wait a few minutes before trying again.');
-        } else if (error.message.includes('For security purposes, you can only request this after')) {
+        } else if (error.message?.includes('For security purposes, you can only request this after')) {
           throw new Error('Please wait a few seconds before requesting another password reset.');
-        } else if (error.message.includes('User not found')) {
+        } else if (error.message?.includes('User not found')) {
           throw new Error('No account found with this email address.');
         }
         throw error;
       }
-      console.log('Reset password email sent successfully');
+
+      console.log('Reset password email sent successfully', data);
       return { success: true, message: 'Password reset email sent successfully' };
     } catch (error: any) {
       console.error('Password reset error:', error);
+      // capture error for UI debugging
+      try { setResetDebug({ error }); } catch (e) {}
       throw error;
     }
   };
@@ -378,6 +398,11 @@ const signInWithGoogle = async () => {
       canAccessAdminDashboard,
       canAccessStaffDashboard,
       canAccessStudentDashboard
+      ,
+      oauthDebug,
+      setOauthDebug,
+      resetDebug,
+      setResetDebug
     }}>
       {children}
     </AuthContext.Provider>

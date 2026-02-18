@@ -16,8 +16,9 @@ import { QuizManager } from './components/staff/QuizManager';
 import { AssignmentManager } from './components/staff/AssignmentManager';
 import { CourseViewer } from './components/courses/CourseViewer';
 import NotFound from './pages/NotFound';
-import Home from '@/pages/home';
+// import Home from '@/pages/home';
 import Home1 from '@/pages/home1';
+import AuthCallback from '@/pages/AuthCallback';
 import { ModernLoginForm } from './components/auth/ModernLoginForm';
 import { InquiryManagement } from './components/admin/InquiryManagement';
 import AdminPayments from './components/admin/AdminPayments';
@@ -38,10 +39,13 @@ function App() {
             <Toaster />
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/home1" element={<Home1 />} />
+              {/* <Route path="/home" element={<Home />} /> */}
+              <Route path="/" element={<Home1 />} />
               <Route path="/login" element={<ModernLoginForm />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/reset-password" element={<ResetPassword />} />            
+              {/* Accept any reset-password subpath Supabase may use (e.g. /reset-password/profile/update) */}
+              <Route path="/reset-password/*" element={<ResetPassword />} />
               <Route path="/admin-reset" element={<AdminPasswordReset />} />
               <Route path="courses/:id" element={<CourseViewer />} />
 
